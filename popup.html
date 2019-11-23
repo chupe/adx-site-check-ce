@@ -2,15 +2,27 @@
 <html>
   <head>
     <style>
-      button {
-        height: 30px;
-        width: 30px;
+      body{
+        width: 80px;
+        text-align: center;
+      }
+      input {
+        height: 20px;
+        width: 50px;
         outline: none;
+      }
+      label{
+        width:50px;
+        font-weight: bold;
       }
     </style>
   </head>
   <body>
-    <button id="changeColor"></button>
+    <label>Highlight Ads</label>
+    <input type="checkbox" id="showAds" checked></input>
+    <button id="hideAds">Hide Ads</button>
+    <label>Check Tags</label>
+    <button id="checkTags">Check Tags</button>
     <script src="popup.js"></script>
   </body>
 </html>

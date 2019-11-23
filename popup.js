@@ -59,18 +59,33 @@ chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
 
         if (request.url) {
+            bkg.console.log(request.url)
             function reqListener() {
                 let response = this.responseText
-                sendResponse(response)
+                if (response)
+                    sendResponse(response)
+                else sendResponse('')
+
             };
 
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', request.url, true);
+            let xhr = new XMLHttpRequest();
+            xhr.open('GET', request.url, true)
             xhr.responseType = 'text'
-            xhr.addEventListener("loadend", reqListener);
+            xhr.addEventListener("loadend", reqListener)
             xhr.send()
 
-            return true
+        } else if (request.tagsInfo) {
+            
+            chrome.storage.sync.set({ tagsInfo: request.tagsInfo }, () => {
+                let tagsInfo = chrome.storage.sync.get("tagsInfo", (data) => {
+                    bkg.console.log(data)
+                    
+                })
+                tagsInfo()
+            })
+            
+            sendResponse('OK')
         }
+        return true
     }
-);
+)

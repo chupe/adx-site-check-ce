@@ -45,7 +45,9 @@ let extractScript = () => {
 
     if (scriptUrl) {
         chrome.runtime.sendMessage({ url: scriptUrl }, (response) => {
-            checkTags(response)
+            if (response)
+                checkTags(response)
+            else console.log('Failed to fetch the script!')
         })
     }
 }
@@ -54,7 +56,8 @@ let checkTags = (script) => {
     // Returns an array of div-gpt tags from adxbid script
     let tagsFromScript = (scriptBody) => {
         let scriptTags = []
-        scriptTags = scriptBody.match(/div-gpt-ad-[0-9]{13}-\d/g)
+        if (scriptBody)
+            scriptTags = scriptBody.match(/div-gpt-ad-[0-9]{13}-\d/g)
 
         return scriptTags
     }
@@ -99,6 +102,7 @@ let checkTags = (script) => {
     let evaluateTags = (headTags, bodyTags, scriptTags) => {
         let tagsInfo = []
         for (let headTag of headTags) {
+            let originUrl = new URL(document.URL)
             let headID = headTag.tagID
             let tagName = headTag.tagName
             let tag = new Tag(headID, tagName)
@@ -109,9 +113,16 @@ let checkTags = (script) => {
             }
 
             for (let bodyID of bodyTags) {
-                if (headID == bodyID)
-                    tag.inBody = true
+                if (headID == bodyID && originUrl.pathname == '/')
+                    tag.inHomepageBody = true
+                else if (headID == bodyID && originUrl.pathname != '/')
+                    tag.inArticleBody = true
             }
+
+            if (originUrl.pathname == '/') 
+                tag.inArticleBody = 'unckecked'
+            if (originUrl.pathname != '/') 
+                tag.inHomepageBody = 'unckecked'
 
             tagsInfo.push(tag)
         }
@@ -124,14 +135,23 @@ let checkTags = (script) => {
             this.sequence = Tag.count++
             this.tagName = tagName,
                 this.ID = headID
-            this.inBody = false
+            this.inHomepageBody = false
+            this.inArticleBody = false
             this.inScript = false
         }
         static count = 1
     }
 
-    console.log(evaluateTags(tagsFromHead(), tagsFromBody(), tagsFromScript(script)))
+    let bodyTags = tagsFromBody()
+    let headTags = tagsFromHead()
+    let scriptTags = tagsFromScript(script)
+    let tagsInfo = evaluateTags(headTags, bodyTags, scriptTags)
+
+    chrome.runtime.sendMessage({ tagsInfo: tagsInfo }, (response) => {
+        console.log(response)
+    })
 }
+
 //message listener for background
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.command === 'show') {
@@ -143,7 +163,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     } else if (request.command === 'checkTags') {
         extractScript();
     } else if (request.script) {
-        checkTags(request.script)
+        (request.script)
     }
     sendResponse({ result: "success" });
 });

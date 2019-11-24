@@ -1,37 +1,35 @@
 
-//find all the image in answer feed,thumbnail and ad feeds and add blurclasses
-var showAds = function () {
+var showAdUnits = function () {
     $('div[id^="div-gpt-ad-"]').css("display", "")
-    $('div[id^="div-gpt-ad-"]').removeClass('hideAds')
-    $('div[id^="div-gpt-ad-"]').addClass('showAds')
+    $('div[id^="div-gpt-ad-"]').removeClass('hideAdUnits')
+    $('div[id^="div-gpt-ad-"]').addClass('showAdUnits')
 }
 
-//find all the image in answer feed,thumbnail and ad feeds and remove blurclasses
-var unshowAds = function () {
-    $('div[id^="div-gpt-ad-"]').removeClass('showAds')
+var unshowAdUnits = function () {
+    $('div[id^="div-gpt-ad-"]').removeClass('showAdUnits')
 }
 
-var hideAds = function () {
-    $('div[id^="div-gpt-ad-"]').addClass('hideAds')
+var hideAdUnits = function () {
+    $('div[id^="div-gpt-ad-"]').addClass('hideAdUnits')
 }
 
 var addListeners = function () {
     $(`<style>
-    .showAds {
+    .showAdUnits {
         display: block;
         background-color: red;
     } 
-    .hideAds {
+    .hideAdUnits {
         display: none;
     }</style>`).appendTo("head");
 
-    showAds();
+    showAdUnits();
 }
 
 var removeListeners = function () {
     $(window).unbind('scroll');
-    $('.showAds').unbind('click');
-    unshowAds();
+    $('.showAdUnits').unbind('click');
+    unshowAdUnits();
 }
 
 let extractScript = () => {
@@ -44,7 +42,7 @@ let extractScript = () => {
     })
 
     if (scriptUrl) {
-        chrome.runtime.sendMessage({ url: scriptUrl }, (response) => {
+        chrome.runtime.sendMessage({ command: 'scriptUrl', url: scriptUrl }, (response) => {
             if (response)
                 checkTags(response)
             else console.log('Failed to fetch the script!')
@@ -63,14 +61,14 @@ let checkTags = (script) => {
     }
 
     // Returns an array of div-gpt tags from DOM body
-    let tagsFromBody = () => {
-        let bodyTags = []
+    let divsFromBody = () => {
+        let bodyDivs = []
         let gptDivs = $("div[id^='div-gpt-ad-']")
         for (let tag of gptDivs) {
-            bodyTags.push(tag.id)
+            bodyDivs.push(tag.id)
         }
 
-        return bodyTags
+        return bodyDivs
     }
 
     // Returns an array of div-gpt tags from DOM head
@@ -79,14 +77,14 @@ let checkTags = (script) => {
 
         for (let script of document.scripts) {
             if (script && headTags.length == 0) {
-                headIDs = script.textContent.match(/div-gpt-ad-[0-9]{13}-\d/g)
-                tagNames = script.textContent.match(/(?<=googletag.defineSlot\('\/[0-9]{7,}\/).+(?=',)/gi)
+                adUnitIDs = script.textContent.match(/div-gpt-ad-[0-9]{13}-\d/g)
+                adUnitNames = script.textContent.match(/(?<=googletag.defineSlot\('\/[0-9]{7,}\/).+(?=',)/gi)
 
-                if (headIDs) {
-                    for (let i = 0; i < headIDs.length; i++) {
+                if (adUnitIDs) {
+                    for (let i = 0; i < adUnitIDs.length; i++) {
                         headTags.push({
-                            tagID: headIDs[i],
-                            tagName: tagNames[i]
+                            ID: adUnitIDs[i],
+                            name: adUnitNames[i]
                         })
                     }
 
@@ -99,42 +97,46 @@ let checkTags = (script) => {
     }
 
     //Returns an array of objects containing info about each tag
-    let evaluateTags = (headTags, bodyTags, scriptTags) => {
-        let tagsInfo = []
+    let evaluateTags = (headTags, bodyDivs, scriptTags) => {
+        let adUnitsInfo = []
         for (let headTag of headTags) {
             let originUrl = new URL(document.URL)
-            let headID = headTag.tagID
-            let tagName = headTag.tagName
-            let tag = new Tag(headID, tagName)
+            let adUnitID = headTag.ID
+            let adUnitName = headTag.name
+            let adUnit = new AdUnit(adUnitID, adUnitName, originUrl.hostname)
 
             for (let scriptID of scriptTags) {
-                if (headID == scriptID)
-                    tag.inScript = true
+                if (adUnitID == scriptID)
+                    adUnit.inScript = true
             }
 
-            for (let bodyID of bodyTags) {
-                if (headID == bodyID && originUrl.pathname == '/')
-                    tag.inHomepageBody = true
-                else if (headID == bodyID && originUrl.pathname != '/')
-                    tag.inArticleBody = true
+            for (let bodyID of bodyDivs) {
+                if (adUnitID == bodyID && originUrl.pathname == '/')
+                    adUnit.inHomepageBody = true
+                else if (adUnitID == bodyID && originUrl.pathname != '/')
+                    adUnit.inArticleBody = true
             }
 
-            if (originUrl.pathname == '/') 
-                tag.inArticleBody = 'unckecked'
-            if (originUrl.pathname != '/') 
-                tag.inHomepageBody = 'unckecked'
+            // This is a signal that the information inside the Adunit object
+            // has not been checked in this function call. It depends if current page
+            // is homepage or article
+            if (originUrl.pathname == '/')
+                adUnit.inArticleBody = 'unchecked'
+            if (originUrl.pathname != '/')
+                adUnit.inHomepageBody = 'unchecked'
 
-            tagsInfo.push(tag)
+            adUnitsInfo.push(adUnit)
         }
 
-        return tagsInfo
+        return adUnitsInfo
     }
 
-    class Tag {
-        constructor(headID, tagName) {
-            this.sequence = Tag.count++
-            this.tagName = tagName,
-                this.ID = headID
+    class AdUnit {
+        constructor(ID, name, publisher) {
+            this.sequence = AdUnit.count++
+            this.publisher = publisher
+            this.name = name
+            this.ID = ID
             this.inHomepageBody = false
             this.inArticleBody = false
             this.inScript = false
@@ -142,30 +144,33 @@ let checkTags = (script) => {
         static count = 1
     }
 
-    let bodyTags = tagsFromBody()
+    let bodyDivs = divsFromBody()
     let headTags = tagsFromHead()
     let scriptTags = tagsFromScript(script)
-    let tagsInfo = evaluateTags(headTags, bodyTags, scriptTags)
+    let adUnitsInfo = evaluateTags(headTags, bodyDivs, scriptTags)
 
-    chrome.runtime.sendMessage({ tagsInfo: tagsInfo }, (response) => {
-        console.log(response)
-    })
+    chrome.runtime.sendMessage({ command: 'adUnitsInfo', adUnitsInfo: adUnitsInfo })
 }
 
 //message listener for background
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    if (request.command === 'show') {
-        addListeners();
-    } else if (request.command === 'unshow') {
-        removeListeners();
-    } else if (request.command === 'hide') {
-        hideAds();
-    } else if (request.command === 'checkTags') {
-        extractScript();
-    } else if (request.script) {
-        (request.script)
+
+    switch (request.command) {
+        case 'highlight':
+            addListeners()
+            break
+        case 'unhighlight':
+            removeListeners()
+            break
+        case 'hide':
+            hideAdUnits()
+            break
+        case 'checkTags':
+            extractScript()
+            break
     }
-    sendResponse({ result: "success" });
+
+    sendResponse({ result: `Succes: ${request.command}` });
 });
 
 

@@ -42,7 +42,5 @@
         "declarativeContent",
         "https://adxbid.info/",
         "https://adxbid.me/",
-        "tabs",
-        "https://*/*"
-    ]
+        "tabs"    ]
 }

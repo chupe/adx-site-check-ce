@@ -8,11 +8,12 @@ chrome.declarativeContent.onPageChanged.removeRules(undefined, function () {
   chrome.declarativeContent.onPageChanged.addRules([{
     conditions: [new chrome.declarativeContent.PageStateMatcher({
       pageUrl: {
-        hostContains: 'akos.ba'
+        // hostContains: 'promotor.mk',
+        schemes: ['https', 'http']
       },
     })
     ],
     actions: [new chrome.declarativeContent.ShowPageAction()]
-  }]);
-});
+  }])
+})
 

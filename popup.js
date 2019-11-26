@@ -15,12 +15,6 @@ let activity = 0
 
 chrome.storage.sync.set({ activity: activity++})
 
-//on init update the UI checkbox based on storage
-chrome.storage.sync.get('highlight', function (data) {
-    highlightAdUnits.checked = data.highlight
-})
-
-
 clearStorage.onclick = () => {
     chrome.storage.sync.clear(() => {
         bkg.console.log("Storage sync has been cleared")

@@ -1,29 +1,66 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <style>
-      body{
-        width: 80px;
-        text-align: center;
-      }
-      input {
-        height: 20px;
-        width: 50px;
-        outline: none;
-      }
-      label{
-        width:50px;
-        font-weight: bold;
-      }
-    </style>
-  </head>
-  <body>
-    <label>Highlight AdUnits</label>
-    <input type="checkbox" id="showAdUnits" checked></input>
-    <button id="hideAdUnits">Hide AdUnits</button>
-    <label>Check Tags</label>
-    <button id="checkTags">Check Tags</button>
-    <button id="clearStorage">Clear Storage</button>
-    <script src="popup.js"></script>
-  </body>
+
+<head>
+  <style>
+    body {
+      width: 400px
+    }
+
+    input {
+      outline: none;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    /* div {
+      display: block;
+    } */
+
+    /* button {
+      display: block;
+    } */
+
+    .row {
+      display: flex;
+    }
+
+    #btnsContainer {
+      flex: 20%;
+      flex-grow: 2;
+    }
+
+    #infoContainer {
+      flex: 80%;
+      flex-grow: 8;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="row">
+    <div id='btnsContainer' class="column">
+      <div>
+        <label>Highlight AdUnits</label>
+        <input type="checkbox" id="highlightAdUnits" checked></input>
+        <button id="hideAdUnits">Hide AdUnits</button>
+      </div>
+      <div>
+        <label>Check Tags</label>
+        <button id="checkTags">Check Tags</button>
+        <label>Clear storage</label>
+        <button id="clearStorage">Clear Storage</button>
+      </div>
+    </div>
+    <div id='infoContainer' class="column">
+      <h4 id="errsList">Errors list</h4>
+      <div id='adUnitErrs'>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+
 </html>

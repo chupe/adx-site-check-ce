@@ -1,8 +1,25 @@
-let showAdUnits = document.getElementById('showAdUnits')
+let highlightAdUnits = document.getElementById('highlightAdUnits')
 let hideAdUnits = document.getElementById('hideAdUnits')
 let checkTags = document.getElementById('checkTags')
 let clearStorage = document.getElementById('clearStorage')
 let bkg = chrome.extension.getBackgroundPage()
+let errsList = document.getElementById("errsList")
+let adUnitErrs = document.getElementById('adUnitErrs')
+let activeTabUrl = chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    activeTabUrl = new URL(tabs[0].url)
+    chrome.storage.sync.get(activeTabUrl.hostname, function (data) {
+        updateInfo(data[activeTabUrl.hostname])
+    })
+})
+let activity = 0
+
+chrome.storage.sync.set({ activity: activity++})
+
+//on init update the UI checkbox based on storage
+chrome.storage.sync.get('highlight', function (data) {
+    highlightAdUnits.checked = data.highlight
+})
+
 
 clearStorage.onclick = () => {
     chrome.storage.sync.clear(() => {
@@ -10,27 +27,22 @@ clearStorage.onclick = () => {
     })
 }
 
-//on init update the UI checkbox based on storage
-chrome.storage.sync.get('hide', function (data) {
-    showAdUnits.checked = data.hide
-});
-
-showAdUnits.onchange = function (element) {
+highlightAdUnits.onchange = function (element) {
     let value = this.checked
 
     //update the extension storage value
-    chrome.storage.sync.set({ 'hide': value })
+    chrome.storage.sync.set({ 'highlight': value })
 
     //Pass init or remove message to content script 
     if (value) {
         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, { command: "highlight", hide: value }, function (response) {
+            chrome.tabs.sendMessage(tabs[0].id, { command: "highlight", highlight: value }, function (response) {
                 bkg.console.log(response.result)
             })
         })
     } else {
         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, { command: "unhighlight", hide: value }, function (response) {
+            chrome.tabs.sendMessage(tabs[0].id, { command: "unhighlight", highlight: value }, function (response) {
                 bkg.console.log(response.result)
             })
         })
@@ -53,6 +65,63 @@ checkTags.onclick = function (element) {
         })
     })
 }
+
+let removeNode = (node) => {
+    while (node.lastChild) {
+        node.removeChild(node.lastChild);
+    }
+    node.remove()
+}
+
+let updateInfo = (changes) => {
+    removeNode(adUnitErrs)
+    if (changes) {
+        for (let adUnit in changes) {
+            let err = document.createElement('ul')
+            let msg = document.createElement('li')
+            err.innerText = changes[adUnit].name
+
+            if (changes[adUnit].inArticleBody === 'unchecked') {
+                msg.innerText = 'Now check Article'
+                err.appendChild(msg)
+
+            } else if (changes[adUnit].inHomepageBody === 'unchecked') {
+                msg.innerText = 'Now check homepage'
+                err.appendChild(msg)
+            } else {
+
+                if (!changes[adUnit].inHomepageBody && !changes[adUnit].inArticleBody) {
+                    msg.innerText = 'NOT found in body'
+                    err.appendChild(msg)
+                }
+
+                if (!changes[adUnit].inScript) {
+                    msg.innerText = 'NOT found in script'
+                    err.appendChild(msg)
+                }
+            }
+            adUnitErrs.appendChild(err)
+            errsList.appendChild(adUnitErrs)
+        }
+    } else {
+        removeNode(adUnitErrs)
+    }
+}
+
+chrome.storage.onChanged.addListener((changes) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        if (changes[activeTabUrl.hostname]) {
+            let isNew = changes[activeTabUrl.hostname].newValue
+
+            if (isNew)
+                updateInfo(changes[activeTabUrl.hostname].newValue)
+            else
+                updateInfo(undefined)
+        }
+    }
+    )
+}
+)
 
 chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
@@ -87,39 +156,30 @@ chrome.runtime.onMessage.addListener(
                 if (isStoredInfoEmpty) {
                     let json = new Object()
                     json[publisher] = adUnitsUpdate
-                    chrome.storage.sync.set(json, () => {
-                        chrome.storage.sync.get(publisher, (update) => {
-                            bkg.console.log('this is first time input: ', update)
-                        })
-                    })
-
+                    chrome.storage.sync.set(json)
                 } else {
 
                     // Update the 'unchecked' fields
-                    for (let i = 0; i < storedInfo[publisher].length; i++) {
-                        let inHomeUnchecked = adUnitsUpdate[i].inHomepageBody == 'unchecked'
-                        let inArticleUnchecked = adUnitsUpdate[i].inArticleBody == 'unchecked'
+                    for (let adUnit in storedInfo[publisher]) {
+                        let inHomeUnchecked = adUnitsUpdate[adUnit].inHomepageBody == 'unchecked'
+                        let inArticleUnchecked = adUnitsUpdate[adUnit].inArticleBody == 'unchecked'
 
                         if (!inHomeUnchecked)
-                            if (storedInfo[publisher][i].inHomepageBody != adUnitsUpdate[i].inHomepageBody)
-                                storedInfo[publisher][i].inHomepageBody = adUnitsUpdate[i].inHomepageBody
+                            if (storedInfo[publisher][adUnit].inHomepageBody != adUnitsUpdate[adUnit].inHomepageBody)
+                                storedInfo[publisher][adUnit].inHomepageBody = adUnitsUpdate[adUnit].inHomepageBody
 
                         if (!inArticleUnchecked)
-                            if (storedInfo[publisher][i].inArticleBody != adUnitsUpdate[i].inArticleBody)
-                                storedInfo[publisher][i].inArticleBody = adUnitsUpdate[i].inArticleBody
+                            if (storedInfo[publisher][adUnit].inArticleBody != adUnitsUpdate[adUnit].inArticleBody)
+                                storedInfo[publisher][adUnit].inArticleBody = adUnitsUpdate[adUnit].inArticleBody
 
                     }
 
-                    chrome.storage.sync.set(storedInfo, () => {
-                        chrome.storage.sync.get(publisher, (update) => {
-                            bkg.console.log('this is updating ', update)
-                        })
-                    })
+                    chrome.storage.sync.set(storedInfo)
                 }
             })
         }
 
-        switch (request.command){
+        switch (request.command) {
             case 'scriptUrl':
                 fetchScript()
                 break
@@ -132,3 +192,4 @@ chrome.runtime.onMessage.addListener(
         return true
     }
 )
+

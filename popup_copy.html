@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    body {
+      width: 80px;
+      text-align: center;
+    }
+
+    input {
+      height: 20px;
+      width: 50px;
+      outline: none;
+    }
+
+    label {
+      width: 50px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="infoContainer">
+    <ul id="adUnitErrs">
+      <li>promotor.mk_970x250_top is not inArticleBody</li>
+      <li>promotor.mk_728x90_fixed is not inArticleBody</li>
+      <li>promotor.mk_728x90_fixed is not inHomepageBody</li>
+      <li>promotor.mk_300x250_side_3 is not inArticleBody</li>
+      <li>promotor.mk_300x250_side_3 is not inHomepageBody</li>
+      <li>promotor.mk_300x250_inArticle is not inHomepageBody</li>
+      <li>promotor.mk_728x90_underArticle is not inHomepageBody</li>
+    </ul>
+  </div>
+  <div id="btnsContainer">
+    <label>Highlight AdUnits</label>
+    <input type="checkbox" id="highlightAdUnits" checked="">
+    <button id="hideAdUnits">Hide AdUnits</button>
+    <label>Check Tags</label>
+    <button id="checkTags">Check Tags</button>
+    <button id="clearStorage">Clear Storage</button>
+  </div>
+  <script src="popup.js"></script>
+
+
+</body>
+
+</html>

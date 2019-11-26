@@ -1,6 +1,8 @@
 let highlightAdUnits = document.getElementById('highlightAdUnits')
 let hideAdUnits = document.getElementById('hideAdUnits')
 let checkTags = document.getElementById('checkTags')
+let showDetails = document.getElementById('showDetails')
+let checkAdsTxt = document.getElementById('checkAdsTxt')
 let clearStorage = document.getElementById('clearStorage')
 let bkg = chrome.extension.getBackgroundPage()
 let errsList = document.getElementById("errsList")
@@ -11,15 +13,16 @@ let activeTabUrl = chrome.tabs.query({ active: true, currentWindow: true }, func
         updateInfo(data[activeTabUrl.hostname])
     })
 })
-let activity = 0
-
-chrome.storage.sync.set({ activity: activity++})
 
 clearStorage.onclick = () => {
     chrome.storage.sync.clear(() => {
         bkg.console.log("Storage sync has been cleared")
     })
 }
+
+chrome.storage.sync.get('highlight', (data) => {
+    highlightAdUnits.value = data.highlight
+})
 
 highlightAdUnits.onchange = function (element) {
     let value = this.checked
@@ -49,6 +52,59 @@ hideAdUnits.onclick = function (element) {
         chrome.tabs.sendMessage(tabs[0].id, { command: "hide" }, function (response) {
             bkg.console.log(response.result)
         })
+    })
+}
+
+checkAdsTxt.onclick = function () {
+    let localAdstxt = ''
+    let adstxt = ''
+    let missingLines = []
+
+    let compareAdsTxt = () => {
+        localAdstxt = localAdstxt.split('\n')
+        adstxt = adstxt.split('\n')
+        for (let localLine of localAdstxt) {
+            let onSite = false
+            let localItems = localLine.split(',').map((item) => item.trim())
+            for (let siteLine of adstxt) {
+                let siteItems = siteLine.split(',').map((item) => item.trim())
+                if (localItems[0] == siteItems[0] && localItems[1] == siteItems[1]) {
+                    onSite = true
+                }
+            }
+            if (!onSite)
+                missingLines.push(localLine)
+        }
+        bkg.console.log(missingLines)
+    }
+
+    function reqListenerLocal() {
+        localAdstxt = this.responseText
+        onsite.send()
+    }
+
+    function reqListenerSite() {
+        adstxt = this.responseText
+        compareAdsTxt()
+    }
+
+    let local = new XMLHttpRequest()
+    local.open("GET", './ads.txt')
+    local.responseType = 'text'
+    local.addEventListener("loadend", reqListenerLocal)
+    local.send()
+
+    let hostAdsTxt = activeTabUrl.origin + '/ads.txt'
+    let onsite = new XMLHttpRequest()
+    onsite.open("GET", hostAdsTxt)
+    onsite.responseType = 'text'
+    onsite.addEventListener("loadend", reqListenerSite)
+
+}
+
+showDetails.onclick = function () {
+    chrome.storage.sync.get(activeTabUrl.hostname, (data) => {
+        bkg.console.log(data)
     })
 }
 
@@ -126,7 +182,6 @@ chrome.runtime.onMessage.addListener(
                 if (response)
                     sendResponse(response)
                 else sendResponse('')
-
             };
 
             let xhr = new XMLHttpRequest();

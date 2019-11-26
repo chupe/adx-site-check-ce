@@ -145,20 +145,20 @@ chrome.storage.sync.get(originUrl.hostname, (data) => {
                 scriptUrl = src
             }
         })
-
+        console.log(scriptUrl)
         if (scriptUrl) {
             chrome.runtime.sendMessage({ command: 'scriptUrl', url: scriptUrl }, (response) => {
                 if (response)
                     checkTags(response)
                 else console.log('Failed to fetch the script!')
             })
-        }
+        } else checkTags('')
     }
 
     let checkTags = (script) => {
         // Returns an array of div-gpt tags from adxbid script
         let tagsFromScript = (scriptBody) => {
-            let scriptTags = []
+            let scriptTags = ''
             if (scriptBody)
                 scriptTags = scriptBody.match(/div-gpt-ad-[0-9]{13}-\d/g)
 
@@ -187,6 +187,8 @@ chrome.storage.sync.get(originUrl.hostname, (data) => {
 
                     if (adUnitIDs) {
                         for (let i = 0; i < adUnitIDs.length; i++) {
+                            if (adUnitNames[i].search("',") > -1)
+                                adUnitNames[i] = adUnitNames[i].substring(0, adUnitNames[i].search("',"))
                             headTags.push({
                                 ID: adUnitIDs[i],
                                 name: adUnitNames[i]

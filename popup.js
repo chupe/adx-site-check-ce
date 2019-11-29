@@ -33,6 +33,13 @@ let activeTabUrl = chrome.tabs.query({ active: true, currentWindow: true }, func
     chrome.storage.sync.get(activeTabUrl.hostname, (data) => {
         if (data[activeTabUrl.hostname]) {
             highlightAdUnits.checked = data[activeTabUrl.hostname].highlight
+            if (highlightAdUnits.checked) {
+                chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                    chrome.tabs.sendMessage(tabs[0].id, { command: "highlight", highlight: highlightAdUnits.checked }, (response) => {
+                        bkg.console.log(response.result)
+                    })
+                })
+            }
         }
     })
 })
@@ -83,7 +90,7 @@ hideAdUnits.onclick = function (element) {
 
 // Pass to the function the information from the content script and the origin url so it can be
 // saved in storage under publisher name key
-let updateStorage = (publisherUpdate) => {
+let updateStorage = (publisherUpdate, sendResponse) => {
     let publisher = activeTabUrl.hostname
     let fresh = publisherUpdate
 
@@ -139,7 +146,10 @@ let updateStorage = (publisherUpdate) => {
 
             let json = {}
             json[publisher] = stored
-            chrome.storage.sync.set(json)
+
+            chrome.storage.sync.set(json, () => {
+                typeof sendResponse === 'function' && sendResponse('stored')
+            })
         }
     })
 }
@@ -324,7 +334,7 @@ chrome.runtime.onMessage.addListener(
                 fetchScript(request.url, sendResponse)
                 break
             case 'publisher':
-                updateStorage(request.publisher)
+                updateStorage(request.publisher, sendResponse)
                 break
             default:
                 sendResponse({ result: "Unrecognized request.command" })

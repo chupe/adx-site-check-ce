@@ -1,23 +1,39 @@
-let highlightAdUnits = document.getElementById('highlightAdUnits')
-let hideAdUnits = document.getElementById('hideAdUnits')
-let checkTags = document.getElementById('checkTags')
-let showDetails = document.getElementById('showDetails')
-let checkAdsTxt = document.getElementById('checkAdsTxt')
-let clearStorage = document.getElementById('clearStorage')
-let errsList = document.getElementById("errsList")
-let adUnitErrs = document.getElementById('adUnitErrs')
+let highlightAdUnits = document.getElementById('highlightAdUnits'),
+    hideAdUnits = document.getElementById('hideAdUnits'),
+    checkTags = document.getElementById('checkTags'),
+    showDetails = document.getElementById('showDetails'),
+    checkAdsTxt = document.getElementById('checkAdsTxt'),
+    clearStorage = document.getElementById('clearStorage'),
+    errsList = document.getElementById("errsList"),
+    adUnitErrs = document.getElementById('adUnitErrs'),
+    homeCheck = document.getElementById('homepageCheck'),
+    articleCheck = document.getElementById('articleCheck')
 
 // bkg provides acces to extension console since popup.js and popup.html have console separate
 // from content and extension
 let bkg = chrome.extension.getBackgroundPage()
 
-// Get activeTabUrl to check against it in different parts of the file
+// Get activeTabUrl since it is used in different parts of the file
 // and to be able to fetch fresh information from storage
 // that is relevant to the currently active tab url
 let activeTabUrl = chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     activeTabUrl = new URL(tabs[0].url)
     chrome.storage.sync.get(activeTabUrl.hostname, function (data) {
+        if (!data[activeTabUrl.hostname]) {
+            let newInput = new Object()
+            newInput.highlight = false
+            let json = {}
+            json[activeTabUrl.hostname] = newInput
+            chrome.storage.sync.set(json)
+        }
         updateInfo(data[activeTabUrl.hostname])
+    })
+
+    // Get saved value for highlight each time the extension icon is clicked
+    chrome.storage.sync.get(activeTabUrl.hostname, (data) => {
+        if (data[activeTabUrl.hostname]) {
+            highlightAdUnits.checked = data[activeTabUrl.hostname].highlight
+        }
     })
 })
 
@@ -27,16 +43,18 @@ clearStorage.onclick = () => {
     })
 }
 
-// Get saved value each time the extension icon is clicked
-chrome.storage.sync.get('highlight', (data) => {
-    highlightAdUnits.checked = data.highlight
-})
-
 highlightAdUnits.onchange = function () {
     let value = this.checked
+    let json = {}
 
-    // Update the extension storage value
-    chrome.storage.sync.set({ 'highlight': value })
+    // chrome.storage.sync.get(activeTabUrl.hostname, (data) => {
+    //     if (data[activeTabUrl.hostname]) {
+
+    //     }
+    // })
+    // json[activeTabUrl.hostname] = value
+    // chrome.storage.sync.set(json)
+    updateStorage({ highlight: value })
 
     // Pass highlight or unhighlight message to content script 
     if (value) {
@@ -60,36 +78,68 @@ hideAdUnits.onclick = function (element) {
             bkg.console.log(response.result)
         })
     })
+    highlightAdUnits.checked = false
 }
 
 // Pass to the function the information from the content script and the origin url so it can be
 // saved in storage under publisher name key
-let updateStorage = (adUnitsUpdate, publisher) => {
-    chrome.storage.sync.get(publisher, (storedInfo) => {
-        let isStoredInfoEmpty = Object.keys(storedInfo).length === 0 && storedInfo.constructor === Object
+let updateStorage = (publisherUpdate) => {
+    let publisher = activeTabUrl.hostname
+    let fresh = publisherUpdate
+
+    // First try and get stored information
+    chrome.storage.sync.get(publisher, (stored) => {
+        let isStored = stored[publisher]
+        stored = stored[publisher]
 
         // If the no information is stored for the publisher
         // create a new entry named [publisher]
-        if (isStoredInfoEmpty) {
-            let json = new Object()
-            json[publisher] = adUnitsUpdate
+        if (!isStored) {
+            let json = {}
+            json[publisher] = publisherUpdate
             chrome.storage.sync.set(json)
-        } else {
+        }
+        else {
+            // Here the rest of the properties are iterated over and updated
+            for (let info in fresh) {
+                // Do not update adUnits property
+                if (info == 'adUnits')
+                    continue
 
-            // Update the 'unchecked' fields
-            for (let adUnit in storedInfo[publisher]) {
-                let inHomeUnchecked = adUnitsUpdate[adUnit].inHomepageBody == 'unchecked'
-                let inArticleUnchecked = adUnitsUpdate[adUnit].inArticleBody == 'unchecked'
-
-                if (!inHomeUnchecked)
-                    storedInfo[publisher][adUnit].inHomepageBody = adUnitsUpdate[adUnit].inHomepageBody
-
-                if (!inArticleUnchecked)
-                    storedInfo[publisher][adUnit].inArticleBody = adUnitsUpdate[adUnit].inArticleBody
-
+                stored[info] = publisherUpdate[info]
             }
 
-            chrome.storage.sync.set(storedInfo)
+            //Ad units are an object inside an object and are iterated separately
+            let oldAdUnits = stored.adUnits
+            let newAdUnits = fresh.adUnits
+            if (newAdUnits) {
+                let homepageCheck = publisherUpdate.homepageCheck
+                let articleCheck = publisherUpdate.articleCheck
+
+                // Values for inHomepage and inArticle should be modified only if the
+                // update homepageCheck = true or articleCheck = true
+                if (oldAdUnits) {
+                    for (let adUnit in newAdUnits) {
+                        if (newAdUnits[adUnit]) {
+
+                            for (let details in newAdUnits[adUnit]) {
+                                if (details == 'inHomepage' && !homepageCheck)
+                                    continue
+                                if (details == 'inArticle' && !articleCheck)
+                                    continue
+                                oldAdUnits[adUnit][details] = newAdUnits[adUnit][details]
+                            }
+
+                        }
+                    }
+                } else {
+                    stored.adUnits = newAdUnits
+                }
+            }
+
+            let json = {}
+            json[publisher] = stored
+            chrome.storage.sync.set(json)
         }
     })
 }
@@ -164,7 +214,7 @@ showDetails.onclick = function () {
 
         // The detailed information about the current site is displayed
         // inside extension console
-        bkg.console.log(data)
+        bkg.console.log(activeTabUrl.hostname, data[activeTabUrl.hostname])
     })
 }
 
@@ -190,38 +240,34 @@ let removeNode = (node) => {
 // and displays brief error information
 let updateInfo = (changes) => {
     removeNode(adUnitErrs)
-    if (changes) {
-        for (let adUnit in changes) {
+    if (changes && changes.adUnits) {
+        let adUnits = changes.adUnits
+        for (let adUnit in adUnits) {
             // Create parent element per adunit
             let err = document.createElement('ul')
             // Create children per adunit errs
             let msg = document.createElement('li')
-            err.innerText = changes[adUnit].name
+            err.innerText = adUnits[adUnit].name
 
             // If else checks if inHomepage and inArticle information is
             // available. If not it suggests to the user to make the missing
             // check.
-            if (changes[adUnit].inArticleBody === 'unchecked') {
-                msg.innerText = 'Now check Article'
-                err.appendChild(msg)
+            articleCheck.checked = changes.articleCheck
+            homepageCheck.checked = changes.homepageCheck
 
-            } else if (changes[adUnit].inHomepageBody === 'unchecked') {
-                msg.innerText = 'Now check homepage'
+            // If both values, inHomepage and inArticle are false and the checks
+            // have been made the error message states it
+            if (!adUnits[adUnit].inArticle && changes.articleCheck && !adUnits[adUnit].inHomepage && changes.homepageCheck) {
+                msg.innerText = 'NOT found in BODY'
                 err.appendChild(msg)
-            } else {
-                // If both values, inHomepageBody and inArticleBody are false the error
-                // message states it
-                if (!changes[adUnit].inHomepageBody && !changes[adUnit].inArticleBody) {
-                    msg.innerText = 'NOT found in body'
-                    err.appendChild(msg)
-                }
-
-                // If inScript value is false it is shown in the popup display
-                if (!changes[adUnit].inScript) {
-                    msg.innerText = 'NOT found in script'
-                    err.appendChild(msg)
-                }
             }
+
+            // If inScript value is false it is shown in the popup display
+            if (!adUnits[adUnit].inScript) {
+                msg.innerText = 'NOT found in script'
+                err.appendChild(msg)
+            }
+
             adUnitErrs.appendChild(err)
             errsList.appendChild(adUnitErrs)
         }
@@ -240,8 +286,11 @@ chrome.storage.onChanged.addListener((changes) => {
             // information can be updated. Else the changes obj contains only
             // oldInfo key meaning the storage has been cleared (newValue == undefined)
             // requiring the popup.html to be cleared of all error info elements
-            if (isNew)
-                updateInfo(changes[activeTabUrl.hostname].newValue)
+            if (isNew) {
+                chrome.storage.sync.get(activeTabUrl.hostname, (data) => {
+                    updateInfo(data[activeTabUrl.hostname])
+                })
+            }
             else
                 updateInfo(undefined)
         }
@@ -274,9 +323,8 @@ chrome.runtime.onMessage.addListener(
             case 'scriptUrl':
                 fetchScript(request.url, sendResponse)
                 break
-            case 'adUnitsInfo':
-                updateStorage(request.adUnitsInfo, publisher)
-                sendResponse()
+            case 'publisher':
+                updateStorage(request.publisher)
                 break
             default:
                 sendResponse({ result: "Unrecognized request.command" })

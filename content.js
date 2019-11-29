@@ -2,7 +2,10 @@ let originUrl = new URL(document.URL)
 let cssAppended = false
 
 chrome.storage.sync.get(originUrl.hostname, (data) => {
-    let adUnitsInfo = data
+    let adUnitsInfo
+    if (data[originUrl.hostname]) {
+        adUnitsInfo = data[originUrl.hostname].adUnits
+    }
 
     let adUnits = $('div[id^="div-gpt-ad-"]')
     // Fill adunit.sizes. Regexp to match the sizes array, than to match
@@ -66,8 +69,7 @@ chrome.storage.sync.get(originUrl.hostname, (data) => {
         adUnits.removeClass('hideAdUnits')
         adUnits.addClass('highlightAdUnits')
 
-        chrome.storage.sync.get(originUrl.hostname, (data) => {
-            adUnitsInfo = data
+        let sizeAdUnits = (adUnitsInfo) => {
             adUnits.each((_index, element) => {
                 let adUnitText = ''
                 let name = ''
@@ -76,9 +78,9 @@ chrome.storage.sync.get(originUrl.hostname, (data) => {
 
                 // The adunit is susposed to contain the name and all
                 // sizes as innerHTML
-                for (let adUnit in adUnitsInfo[originUrl.hostname]) {
+                for (let adUnit in adUnitsInfo) {
                     let elementId = element.getAttribute('id')
-                    let currentAdUnit = adUnitsInfo[originUrl.hostname][adUnit]
+                    let currentAdUnit = adUnitsInfo[adUnit]
 
                     // Since div contains only ID and adUnitsInfo object
                     // has names as keys the adUnitsInfo object need to be
@@ -96,7 +98,18 @@ chrome.storage.sync.get(originUrl.hostname, (data) => {
                 element.style.width = width
                 element.innerHTML = adUnitText
             })
-        })
+            adUnits.on('click', changeSize)
+        }
+
+        if (adUnitsInfo) {
+            sizeAdUnits(adUnitsInfo)
+        } else {
+            checkTags('', () => {
+                chrome.storage.sync.get(originUrl.hostname, (data) => {
+                    sizeAdUnits(data[originUrl.hostname])
+                })
+            })
+        }
     }
 
     // Remove css that makes adunits highlighted
@@ -113,7 +126,7 @@ chrome.storage.sync.get(originUrl.hostname, (data) => {
     // changes size of highlighted adunit in descending order 
     // of adunit.sizes array
     let changeSize = function () {
-        let sizes = adUnitsInfo[originUrl.hostname][$(this).attr('title')].sizes
+        let sizes = adUnitsInfo[$(this).attr('title')].sizes
         let width = $(this).width()
         let height = $(this).height()
         for (let size of sizes) {
@@ -141,7 +154,6 @@ chrome.storage.sync.get(originUrl.hostname, (data) => {
             cssAppended = true
         }
 
-        adUnits.on('click', changeSize)
         highlightAdUnits()
     }
 
@@ -171,124 +183,158 @@ chrome.storage.sync.get(originUrl.hostname, (data) => {
         } else checkTags('')
     }
 
+    // Returns an array of div-gpt tags from adxbid script
+    // unless parameter is missing. If so returns empty array
+    let tagsFromScript = (scriptBody) => {
+        let scriptTags = ''
+        if (scriptBody)
+            scriptTags = scriptBody.match(/div-gpt-ad-[0-9]{13}-\d/g)
+
+        return scriptTags
+    }
+
+    // Returns an array of div-gpt tags from DOM body
+    let divsFromBody = () => {
+        let bodyDivs = []
+        let gptDivs = $("div[id^='div-gpt-ad-']")
+        for (let tag of gptDivs) {
+            bodyDivs.push(tag.id)
+        }
+
+        return bodyDivs
+    }
+
+    // Returns an array of div-gpt tags from DOM head
+    let tagsFromHead = () => {
+        let headTags = []
+
+        // Iterate over all scripts in the head and match id
+        // and name
+        for (let script of document.scripts) {
+            if (script) {// && headTags.length == 0) {
+                let tempIDs = []
+                let tempNames = []
+                let adUnitIDs = []
+                let adUnitNames = []
+
+                tempIDs = script.textContent.match(/div-gpt-ad-[0-9]{13}-\d/g)
+                if (tempIDs) {
+                    for (let ID of tempIDs)
+                        adUnitIDs.push(ID)
+                }
+
+                tempNames = script.textContent.match(/(?<=googletag.defineSlot\('\/[0-9]{7,}\/).+(?=',)/gi)
+                if (tempNames) {
+                    for (let name of tempNames)
+                        adUnitNames.push(name)
+                }
+
+                if (adUnitIDs) {
+                    for (let i = 0; i < adUnitIDs.length; i++) {
+                        // If there are additional unnamed tags found in body
+                        // they will not be part of the adunitsinfo object
+                        if (!adUnitNames[i])
+                            continue
+                        // In rare cases when sizes array contains 'fluid'
+                        // the name isnt matched correctly. When this is the case
+                        // the name is substringed up to the first occurence of - ', marking
+                        // the end of actual adunit name
+                        if (adUnitNames[i].search("',") > -1)
+                            adUnitNames[i] = adUnitNames[i].substring(0, adUnitNames[i].search("',"))
+                        headTags.push({
+                            ID: adUnitIDs[i],
+                            name: adUnitNames[i]
+                        })
+                    }
+                }
+
+            }
+        }
+
+        return headTags
+    }
+
+    // Returns an array of objects containing info about each tag.
+    // Object keys are named by adunit names. The function iterates over
+    // headTags and compares with body and script arrays
+    let evaluateTags = (headTags, bodyDivs, scriptTags) => {
+        let adUnitsInfo = {}
+        for (let headTag of headTags) {
+            let adUnitID = headTag.ID
+            let adUnitName = headTag.name
+            let adUnit = new AdUnit(adUnitID, adUnitName, originUrl.hostname)
+
+            for (let scriptID of scriptTags) {
+                if (adUnitID == scriptID)
+                    adUnit.inScript = true
+            }
+
+            for (let bodyID of bodyDivs) {
+                if (adUnitID == bodyID && originUrl.pathname == '/')
+                    adUnit.inHomepage = true
+                else if (adUnitID == bodyID && originUrl.pathname != '/')
+                    adUnit.inArticle = true
+            }
+
+            adUnit.sizes = extractSizes(adUnit.name)
+            adUnitsInfo[adUnit.name] = adUnit
+        }
+
+        return adUnitsInfo
+    }
+
+    class Publisher {
+        constructor(name, adUnits) {
+            this.adUnits = adUnits
+            this.name = name
+
+            if (originUrl.pathname == '/')
+                this.homepageCheck = true
+            else
+                this.articleCheck = true
+        }
+        adstxtMissingLines
+        articleCheck
+        homepageCheck
+        highlight
+        adstxtCheck
+    }
+
+    class AdUnit {
+        constructor(ID, name, publisher) {
+            this.publisher = publisher
+            this.name = name
+            this.ID = ID
+            this.inHomepage = false
+            this.inArticle = false
+            this.inScript = false
+            this.sizes = []
+        }
+    }
+
     // Contains three functions to get information in the form of an array
     // from the script, head and body sections. After it has been completed
     // the resulting arrays go inside evaluateTags.
-    let checkTags = (script) => {
-        // Returns an array of div-gpt tags from adxbid script
-        // unless parameter is missing. If so returns empty array
-        let tagsFromScript = (scriptBody) => {
-            let scriptTags = ''
-            if (scriptBody)
-                scriptTags = scriptBody.match(/div-gpt-ad-[0-9]{13}-\d/g)
-
-            return scriptTags
-        }
-
-        // Returns an array of div-gpt tags from DOM body
-        let divsFromBody = () => {
-            let bodyDivs = []
-            let gptDivs = $("div[id^='div-gpt-ad-']")
-            for (let tag of gptDivs) {
-                bodyDivs.push(tag.id)
-            }
-
-            return bodyDivs
-        }
-
-        // Returns an array of div-gpt tags from DOM head
-        let tagsFromHead = () => {
-            let headTags = []
-
-            // Iterate over all scripts in the head and match id
-            // and name
-            for (let script of document.scripts) {
-                if (script && headTags.length == 0) {
-                    adUnitIDs = script.textContent.match(/div-gpt-ad-[0-9]{13}-\d/g)
-                    adUnitNames = script.textContent.match(/(?<=googletag.defineSlot\('\/[0-9]{7,}\/).+(?=',)/gi)
-
-                    if (adUnitIDs) {
-                        for (let i = 0; i < adUnitIDs.length; i++) {
-                            // In rare cases when sizes array contains 'fluid'
-                            // the name isnt matched correctly. When this is the case
-                            // the name is substringed up to the first occurence of - ', marking
-                            // the end of actual adunit name
-                            if (adUnitNames[i].search("',") > -1)
-                                adUnitNames[i] = adUnitNames[i].substring(0, adUnitNames[i].search("',"))
-                            headTags.push({
-                                ID: adUnitIDs[i],
-                                name: adUnitNames[i]
-                            })
-                        }
-                    }
-
-                }
-            }
-
-            return headTags
-        }
-
-        // Returns an array of objects containing info about each tag.
-        // Object keys are named by adunit names. The function iterates over
-        // headTags and compares with body and script arrays
-        let evaluateTags = (headTags, bodyDivs, scriptTags) => {
-            let adUnitsInfo = {}
-            for (let headTag of headTags) {
-                let adUnitID = headTag.ID
-                let adUnitName = headTag.name
-                let adUnit = new AdUnit(adUnitID, adUnitName, originUrl.hostname)
-
-                for (let scriptID of scriptTags) {
-                    if (adUnitID == scriptID)
-                        adUnit.inScript = true
-                }
-
-                for (let bodyID of bodyDivs) {
-                    if (adUnitID == bodyID && originUrl.pathname == '/')
-                        adUnit.inHomepageBody = true
-                    else if (adUnitID == bodyID && originUrl.pathname != '/')
-                        adUnit.inArticleBody = true
-                }
-
-                // If the current location is homepage than inArticle is marked
-                // as 'unchecked' so as not to produce false errors. 'unchecked'
-                // field values get replaced accordingly when the object is updated
-                // inside popup.js
-                if (originUrl.pathname == '/')
-                    adUnit.inArticleBody = 'unchecked'
-                if (originUrl.pathname != '/')
-                    adUnit.inHomepageBody = 'unchecked'
-
-                adUnit.sizes = extractSizes(adUnit.name)
-                adUnitsInfo[adUnit.name] = adUnit
-            }
-
-            return adUnitsInfo
-        }
-
-        class AdUnit {
-            constructor(ID, name, publisher) {
-                this.sequence = AdUnit.count++
-                this.publisher = publisher
-                this.name = name
-                this.ID = ID
-                this.inHomepageBody = false
-                this.inArticleBody = false
-                this.inScript = false
-                this.sizes = []
-                this.missingAdsTxtLines = []
-            }
-            static count = 1
-        }
-
+    let checkTags = (script, callback) => {
         let bodyDivs = divsFromBody()
         let headTags = tagsFromHead()
         let scriptTags = tagsFromScript(script)
+
         let adUnitsInfo = evaluateTags(headTags, bodyDivs, scriptTags)
 
+        let publisher = new Publisher(originUrl.hostname, adUnitsInfo)
+
+        if (originUrl.pathname != '/')
+            publisher.articleCheck = true
+        else publisher.homepageCheck = true
+
         // Upon completion the adUnitsInfo object is passed to the popup.js
-        chrome.runtime.sendMessage({ command: 'adUnitsInfo', adUnitsInfo: adUnitsInfo })
+        chrome.runtime.sendMessage({ command: 'publisher', publisher: publisher })
+
+        typeof callback === 'function' && callback()
     }
+
+
 
     chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 

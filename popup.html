@@ -4,7 +4,8 @@
 <head>
   <style>
     body {
-      width: 400px
+      width: 400px;
+      margin: 0;
     }
 
     input {
@@ -17,15 +18,18 @@
 
     .row {
       display: flex;
+      justify-content: center;
     }
 
     #btnsContainer {
+      margin: 10px;
       flex: 20%;
       flex-grow: 2;
     }
 
     #infoContainer {
-      flex: 80%;
+      margin: 10px;
+      flex: 70%;
       flex-grow: 8;
     }
   </style>
@@ -42,10 +46,10 @@
       <div>
         <label for="checkTags">Tags</label>
         <button id="checkTags">Check Tags</button>
-        <label for="showDetails">Details</label>
-        <button id="showDetails">Show details</button>
         <label for="checkAdsTxt">Ads.txt</label>
         <button id="checkAdsTxt">Check ads.txt</button>
+        <label for="showDetails">Details</label>
+        <button id="showDetails">Show details</button>
         <label for="clearStorage">Storage</label>
         <button id="clearStorage">Clear Storage</button>
       </div>

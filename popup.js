@@ -102,6 +102,7 @@ let updateStorage = (publisherUpdate, sendResponse) => {
             chrome.storage.sync.set(json)
         }
         else {
+
             // Here the rest of the properties are iterated over and updated
             for (let info in fresh) {
                 // Do not update adUnits property
@@ -129,11 +130,13 @@ let updateStorage = (publisherUpdate, sendResponse) => {
                                     continue
                                 if (details == 'inArticle' && !articleCheck)
                                     continue
+
+                                // If inScript has been set to true do not set it to
+                                // false if in another context the script tags are not present
                                 if (details == 'inScript' && oldAdUnits[adUnit][details])
                                     continue
                                 oldAdUnits[adUnit][details] = newAdUnits[adUnit][details]
                             }
-
                         }
                     }
                 } else {
@@ -245,6 +248,7 @@ let removeNode = (node) => {
     node.remove()
 }
 
+// Check if an object is empty or has properties
 let hasProperties = (obj) => {
     for (let prop in obj) {
         if (obj.hasOwnProperty(prop))
@@ -258,11 +262,14 @@ let hasProperties = (obj) => {
 // suggested in the help text. The function appends the names of all adunits
 // and displays brief error information
 let updateInfo = (changes) => {
+
     // Update checkboxes
     adstxtCheck.checked = changes && changes.adstxtCheck ? changes.adstxtCheck : false
     homepageCheck.checked = changes && changes.homepageCheck ? changes.homepageCheck : false
     articleCheck.checked = changes && changes.articleCheck ? changes.articleCheck : false
 
+    // Create an element for 'tags info', div containing errors per ad unit
+    // and ads.txt check info
     let tagsH4 = document.getElementById('tagsInfo')
     if (tagsH4)
         removeNode(tagsH4)
@@ -275,6 +282,9 @@ let updateInfo = (changes) => {
     if (adstxtH4)
         removeNode(adstxtH4)
 
+    // In the beginning of the function call the information is cleared from the
+    // popup.html and if the 'changes' parameter is empty than it's suposed to
+    // stay empty
     if (!changes) return
 
     let tagsInfo = document.createElement('h4')
@@ -289,13 +299,15 @@ let updateInfo = (changes) => {
         let adUnits = changes.adUnits
 
         for (let adUnit in adUnits) {
+
             // Create parent element per adunit
             let err = document.createElement('ul')
-            // Create children per adunit errs
+
+            // Create a child node per adunit errors
             err.innerText = adUnits[adUnit].name
 
-            // If both values, inHomepage and inArticle are false and the checks
-            // have been made the error message states it
+            // More information is available when both checks, homepage and article,
+            // have been made
             if (changes.articleCheck && changes.homepageCheck) {
 
                 if (!adUnits[adUnit].inArticle && !adUnits[adUnit].inHomepage) {
@@ -320,7 +332,11 @@ let updateInfo = (changes) => {
             infoContainer.appendChild(tagsInfo)
             infoContainer.appendChild(adUnitErrs)
         }
-    } else if (changes && changes.homepageCheck || changes && changes.articleCheck) {
+
+        // If homepage and article checks have been made but the corresponding values
+        // are false than display the no GPT found message.
+        // changes is in the evaluation here just to avoid type errors
+    } else if (changes && (changes.homepageCheck || changes.articleCheck)) {
         infoContainer.appendChild(tagsInfo)
         tagsInfo.innerText = 'No GPT ad units have been detected on this site'
     }
@@ -395,4 +411,3 @@ chrome.runtime.onMessage.addListener(
         return true
     }
 )
-

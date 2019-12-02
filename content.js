@@ -13,11 +13,13 @@ let extractSizes = (name) => {
     let regex = new RegExp("(?<=/" + name + "', ?\\[ ?).+(?= ?\\] ?, ?)", 'g')
     let sizes = ''
     for (let script of scripts) {
+
         // If there is a script and sizes array hasnt been populated yet
         if (script && !sizes) {
             sizes = script.textContent.match(regex)
             if (sizes) {
                 let reg = new RegExp(", ?", 'g')
+
                 // If ad unit has one size it does not have two pairs of braces,
                 // and requires different approach to turn it into array of int
                 if (!sizes[0].match(/\[[0-9]{3},[ ]*[0-9]{2,}\]/g)) {
@@ -35,7 +37,7 @@ let extractSizes = (name) => {
                         return size
                     })
 
-                    // Sort according to surface area of adunit
+                    // Sort according to surface area of an ad unit
                     sizes.sort((a, b) => {
                         return b[0] * b[1] - a[0] * a[1]
                     })
@@ -72,7 +74,7 @@ let highlightAdUnits = function () {
             let width = 0
 
             // The adunit is susposed to contain the name and all
-            // sizes as innerHTML
+            // sizes as inner text
             for (let adUnit in adUnitsInfo) {
                 let elementId = element.getAttribute('id')
                 let currentAdUnit = adUnitsInfo[adUnit]
@@ -89,6 +91,8 @@ let highlightAdUnits = function () {
                 }
             }
 
+            // A new div is nested inside the div with gpt tag, in order to
+            // have the ad unit centered
             let newDiv = document.createElement('div')
 
             newDiv.title = name
@@ -97,6 +101,7 @@ let highlightAdUnits = function () {
             newDiv.innerHTML = adUnitText
             newDiv.className = 'adUnits'
 
+            // First clear out all child nodes of the targeted div
             while (element.lastChild) {
                 element.removeChild(element.lastChild)
             }
@@ -106,6 +111,10 @@ let highlightAdUnits = function () {
         })
     }
 
+    // If there is not ad units information available start the process
+    // for extracting the required info by calling extractScript(). Since
+    // there is a delay for the process to complete and the information to get
+    // stored a setTimeout is to compensate at the moment
     if (adUnitsInfo) {
         sizeAdUnits(adUnitsInfo)
     } else {
@@ -383,4 +392,3 @@ window.onload = () => {
         }
     })
 }
-

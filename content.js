@@ -88,12 +88,22 @@ let highlightAdUnits = function () {
                     width = currentAdUnit.sizes[0][0] + 'px'
                 }
             }
-            element.title = name
-            element.style.height = height
-            element.style.width = width
-            element.innerHTML = adUnitText
+
+            let newDiv = document.createElement('div')
+
+            newDiv.title = name
+            newDiv.style.height = height
+            newDiv.style.width = width
+            newDiv.innerHTML = adUnitText
+            newDiv.className = 'adUnits'
+
+            while (element.lastChild) {
+                element.removeChild(element.lastChild)
+            }
+            $(newDiv).on('click', changeSize)
+
+            element.appendChild(newDiv)
         })
-        adUnits.on('click', changeSize)
     }
 
     if (adUnitsInfo) {
@@ -102,7 +112,7 @@ let highlightAdUnits = function () {
         extractScript()
         setTimeout(() => {
             sizeAdUnits(adUnitsInfo)
-        }, 100)
+        }, 200)
     }
 }
 
@@ -137,14 +147,20 @@ let changeSize = function () {
 let addListeners = function () {
     if (!cssAppended) {
         $(`<style>
-                .highlightAdUnits {
-                    display: block;
-                    background-color: red;
-                    text-align: center;
-                } 
-                .hideAdUnits {
-                    display: none;
-                }</style>`).appendTo("head")
+            .highlightAdUnits {
+                display: block;
+                align-items: center;
+                text-align: center;
+            }
+            .adUnits {
+                margin: auto;
+                background-color: red;
+                outline: 5px dotted black;
+            }
+            .hideAdUnits {
+                display: none;
+            }
+        </style>`).appendTo("head")
         cssAppended = true
     }
 

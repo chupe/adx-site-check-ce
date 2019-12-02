@@ -4,10 +4,11 @@ let highlightAdUnits = document.getElementById('highlightAdUnits'),
     showDetails = document.getElementById('showDetails'),
     checkAdsTxt = document.getElementById('checkAdsTxt'),
     clearStorage = document.getElementById('clearStorage'),
-    errsList = document.getElementById("errsList"),
-    adUnitErrs = document.getElementById('adUnitErrs'),
     homeCheck = document.getElementById('homepageCheck'),
-    articleCheck = document.getElementById('articleCheck')
+    articleCheck = document.getElementById('articleCheck'),
+    adstxtCheck = document.getElementById('adstxtCheck'),
+    infoContainer = document.getElementById('infoContainer')
+
 
 // bkg provides acces to extension console since popup.js and popup.html have console separate
 // from content and extension
@@ -54,13 +55,6 @@ highlightAdUnits.onchange = function () {
     let value = this.checked
     let json = {}
 
-    // chrome.storage.sync.get(activeTabUrl.hostname, (data) => {
-    //     if (data[activeTabUrl.hostname]) {
-
-    //     }
-    // })
-    // json[activeTabUrl.hostname] = value
-    // chrome.storage.sync.set(json)
     updateStorage({ highlight: value })
 
     // Pass highlight or unhighlight message to content script 
@@ -103,6 +97,7 @@ let updateStorage = (publisherUpdate, sendResponse) => {
         // create a new entry named [publisher]
         if (!isStored) {
             let json = {}
+            publisherUpdate.name = activeTabUrl.hostname
             json[publisher] = publisherUpdate
             chrome.storage.sync.set(json)
         }
@@ -172,6 +167,8 @@ checkAdsTxt.onclick = function () {
 
         for (let localLine of localAdstxt) {
             let onSite = false
+            // Skip line of comment
+            if (localLine.charAt(0) === '#') continue
             // Each line is split into comma separated list (bidder name, publisher ID)
             // trimmed of spaces for consistency. Iterate over local ads.txt and try to
             // match it against the origin site ads.txt. If unable push missing lines
@@ -187,8 +184,10 @@ checkAdsTxt.onclick = function () {
                 missingLines.push(localLine)
         }
 
-        // So far the value is only shown inside the extension console
-        bkg.console.log(missingLines)
+        updateStorage({
+            adstxtMissingLines: missingLines,
+            adstxtCheck: true
+        })
     }
 
     function reqListenerLocal() {
@@ -239,9 +238,17 @@ checkTags.onclick = function (element) {
 // and child elements are stacking upon each apppendChild call
 let removeNode = (node) => {
     while (node.lastChild) {
-        node.removeChild(node.lastChild);
+        node.removeChild(node.lastChild)
     }
     node.remove()
+}
+
+let hasProperties = (obj) => {
+    for (let prop in obj) {
+        if (obj.hasOwnProperty(prop))
+            return true
+    }
+
 }
 
 // Update displayed info. When changes object is passed the function check
@@ -249,40 +256,74 @@ let removeNode = (node) => {
 // suggested in the help text. The function appends the names of all adunits
 // and displays brief error information
 let updateInfo = (changes) => {
-    removeNode(adUnitErrs)
-    if (changes && changes.adUnits) {
+    // Update checkboxes
+    adstxtCheck.checked = changes && changes.adstxtCheck ? changes.adstxtCheck : false
+    homepageCheck.checked = changes && changes.homepageCheck ? changes.homepageCheck : false
+    articleCheck.checked = changes && changes.articleCheck ? changes.articleCheck : false
+
+    let tagsH4 = document.getElementById('tagsInfo')
+    if (tagsH4)
+        removeNode(tagsH4)
+
+    let adUnitErrsDiv = document.getElementById('adUnitErrs')
+    if (adUnitErrsDiv)
+        removeNode(adUnitErrsDiv)
+
+    let adstxtH4 = document.getElementById('adstxt')
+    if (adstxtH4)
+        removeNode(adstxtH4)
+
+    if (!changes) return
+
+    let tagsInfo = document.createElement('h4')
+    tagsInfo.id = 'tagsInfo'
+
+    if (changes && changes.adUnits && hasProperties(changes.adUnits)) {
+        let adUnitErrs = document.createElement('div')
+        adUnitErrs.id = 'adUnitErrs'
+
+        tagsInfo.innerText = 'Tags info'
+
         let adUnits = changes.adUnits
+
         for (let adUnit in adUnits) {
             // Create parent element per adunit
             let err = document.createElement('ul')
             // Create children per adunit errs
-            let msg = document.createElement('li')
             err.innerText = adUnits[adUnit].name
-
-            // If else checks if inHomepage and inArticle information is
-            // available. If not it suggests to the user to make the missing
-            // check.
-            articleCheck.checked = changes.articleCheck
-            homepageCheck.checked = changes.homepageCheck
 
             // If both values, inHomepage and inArticle are false and the checks
             // have been made the error message states it
             if (!adUnits[adUnit].inArticle && changes.articleCheck && !adUnits[adUnit].inHomepage && changes.homepageCheck) {
+                let msg = document.createElement('li')
                 msg.innerText = 'NOT found in BODY'
                 err.appendChild(msg)
             }
 
             // If inScript value is false it is shown in the popup display
             if (!adUnits[adUnit].inScript) {
+                let msg = document.createElement('li')
                 msg.innerText = 'NOT found in script'
                 err.appendChild(msg)
             }
 
             adUnitErrs.appendChild(err)
-            errsList.appendChild(adUnitErrs)
+            infoContainer.appendChild(tagsInfo)
+            infoContainer.appendChild(adUnitErrs)
         }
-    } else {
-        removeNode(adUnitErrs)
+    } else if (changes && changes.homepageCheck || changes && changes.articleCheck) {
+        infoContainer.appendChild(tagsInfo)
+        tagsInfo.innerText = 'No GPT ad units have been detected on this site'
+    }
+
+    let adstxt = document.createElement('h4')
+    adstxt.id = 'adstxt'
+    if (changes && changes.adstxtCheck && changes.adstxtMissingLines.length != 0) {
+        adstxt.innerText = 'Ads.txt is missing ' + changes.adstxtMissingLines.length + ' lines'
+        infoContainer.appendChild(adstxt)
+    } else if (changes.adstxtCheck) {
+        adstxt.innerText = 'Ads.txt file contains all the required lines'
+        infoContainer.appendChild(adstxt)
     }
 }
 

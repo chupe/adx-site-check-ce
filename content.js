@@ -227,7 +227,7 @@ let tagsFromHead = () => {
             let adUnitIDs = []
             let adUnitNames = []
 
-            tempIDs = script.textContent.match(/div-gpt-ad-[0-9]{13}-\d/g)
+            tempIDs = script.textContent.match(/div-gpt-ad-[0-9]{13}-\d{1,2}(?=')/g)
             if (tempIDs) {
                 for (let ID of tempIDs)
                     adUnitIDs.push(ID)

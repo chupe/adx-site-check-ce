@@ -129,6 +129,8 @@ let updateStorage = (publisherUpdate, sendResponse) => {
                                     continue
                                 if (details == 'inArticle' && !articleCheck)
                                     continue
+                                if (details == 'inScript' && oldAdUnits[adUnit][details])
+                                    continue
                                 oldAdUnits[adUnit][details] = newAdUnits[adUnit][details]
                             }
 
@@ -294,10 +296,17 @@ let updateInfo = (changes) => {
 
             // If both values, inHomepage and inArticle are false and the checks
             // have been made the error message states it
-            if (!adUnits[adUnit].inArticle && changes.articleCheck && !adUnits[adUnit].inHomepage && changes.homepageCheck) {
-                let msg = document.createElement('li')
-                msg.innerText = 'NOT found in BODY'
-                err.appendChild(msg)
+            if (changes.articleCheck && changes.homepageCheck) {
+
+                if (!adUnits[adUnit].inArticle && !adUnits[adUnit].inHomepage) {
+                    let msg = document.createElement('li')
+                    msg.innerText = 'NOT found in BODY'
+                    err.appendChild(msg)
+                } else if (!adUnits[adUnit].inArticle && adUnits[adUnit].inHomepage) {
+                    err.innerText += ' (homepage only)'
+                } else if (adUnits[adUnit].inArticle && !adUnits[adUnit].inHomepage) {
+                    err.innerText += ' (article only)'
+                }
             }
 
             // If inScript value is false it is shown in the popup display

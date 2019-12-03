@@ -85,7 +85,8 @@ let highlightAdUnits = function () {
                 if (elementId == currentAdUnit.ID) {
                     let sizes = sizesAsText(currentAdUnit)
                     name = currentAdUnit.name
-                    adUnitText = `${name}<br>${sizes}`
+                    adUnitText = `<p>${name}</p>
+                                <p>${sizes}</p>`
                     height = currentAdUnit.sizes[0][1] + 'px'
                     width = currentAdUnit.sizes[0][0] + 'px'
                 }
@@ -157,14 +158,15 @@ let addListeners = function () {
     if (!cssAppended) {
         $(`<style>
             .highlightAdUnits {
-                display: block;
-                align-items: center;
-                text-align: center;
             }
             .adUnits {
                 margin: auto;
                 background-color: red;
-                outline: 5px dotted black;
+                border: 5px dotted black;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
             }
             .hideAdUnits {
                 display: none;

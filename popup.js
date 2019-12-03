@@ -300,11 +300,19 @@ let updateInfo = (changes) => {
 
         for (let adUnit in adUnits) {
 
+            // Tooltip for GPT ID copy functionality
+            let tooltip = document.createElement('div')
+            tooltip.className = 'tooltip'
+            let span = document.createElement('span')
+            span.className = 'tooltiptext'
+            span.id = adUnits[adUnit].ID + '_tooltip'
+
             // Create parent element per adunit
             let err = document.createElement('ul')
 
             // Create a child node per adunit errors
             err.innerText = adUnits[adUnit].name
+            err.id = adUnits[adUnit].ID
 
             // More information is available when both checks, homepage and article,
             // have been made
@@ -328,7 +336,40 @@ let updateInfo = (changes) => {
                 err.appendChild(msg)
             }
 
-            adUnitErrs.appendChild(err)
+            // Execute copy event
+            err.onclick = function () {
+                let tooltip = document.getElementById(err.id + '_tooltip')
+                tooltip.parentElement.parentElement.classList.add('tooltipclicked')
+
+                document.execCommand("copy")
+            }
+
+            // Since nothing is selected on copy event execution GPT ID is taken for pasting
+            // via this function
+            err.addEventListener("copy", function (event) {
+                let copyText
+                event.preventDefault()
+                if (event.clipboardData) {
+                    event.clipboardData.setData("text/plain", err.id)
+                    copyText = event.clipboardData.getData("text")
+                }
+
+                // Tooltip appears with the text containing the ID
+                let tooltip = document.getElementById(err.id + '_tooltip')
+                tooltip.innerHTML = 'Copied: ' + copyText
+            })
+
+            // On mouseout hides the tooltip
+            err.onmouseout = () => {
+                let tooltip = document.getElementById(err.id + '_tooltip')
+                tooltip.parentElement.parentElement.classList.remove('tooltipclicked')
+            }
+
+            // Tooltip container and span are required for proper display of tooltips
+            err.appendChild(span)
+            tooltip.appendChild(err)
+
+            adUnitErrs.appendChild(tooltip)
             infoContainer.appendChild(tagsInfo)
             infoContainer.appendChild(adUnitErrs)
         }

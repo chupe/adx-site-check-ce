@@ -1,0 +1,14 @@
+.highlightAdUnits {
+}
+.adUnits {
+    margin: auto;
+    background-color: red;
+    border: 5px dotted black;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.hideAdUnits {
+    display: none;
+}

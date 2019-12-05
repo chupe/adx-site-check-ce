@@ -96,25 +96,6 @@ let showDetails = () => {
   })
 }
 
-// Script url is the url extracted in content, passed here in a message and the script body
-// will be sent back to content as a response to that message.
-let fetchScript = (scriptUrl, publisher) => {
-  function reqListener() {
-    let response = this.responseText
-    if (response) {
-      let json = {}
-      json[publisher] = { script: response }
-      updateStorage(json)
-    }
-  }
-
-  let xhr = new XMLHttpRequest();
-  xhr.open('GET', scriptUrl, true)
-  xhr.responseType = 'text'
-  xhr.addEventListener("loadend", reqListener)
-  xhr.send()
-}
-
 let adstxt = (publisher) => {
   let origin = new URL(publisher).origin
   publisher = new URL(publisher).hostname
@@ -179,8 +160,6 @@ let adstxt = (publisher) => {
 
   // Remote send() is called from reqListenerLocal to make sure that
   // both adstxt and localAdsTxt are resolved before calling compare function
-  console.log(origin)
-
   let hostAdsTxt = new URL(origin + '/ads.txt')
   let onsite = new XMLHttpRequest()
   onsite.open("GET", hostAdsTxt)
@@ -238,10 +217,38 @@ let extractSizes = (name) => {
 // Returns an array of div-gpt tags from adxbid script
 // unless parameter is missing. If so returns empty array
 let tagsFromScript = (publisher) => {
+
+  // Script url is the url extracted in content, passed here in a message and the script body
+  // will be sent back to content as a response to that message.
+  let fetchScript = (scriptUrl) => {
+    return new Promise((resolve, reject) => {
+
+      function reqListener() {
+        let script = this.responseText
+        if (script) {
+          resolve(script)
+        } else
+          reject('Script failed to load')
+      }
+
+      let xhr = new XMLHttpRequest();
+      xhr.open('GET', scriptUrl, true)
+      xhr.responseType = 'text'
+      xhr.addEventListener("loadend", reqListener)
+      xhr.send()
+    })
+  }
+
   let scriptTags = ''
-  chrome.storage.sync.get(publisher, (data) => {
-    if (data[publisher] && data[publisher].script)
-      scriptTags = script.match(/div-gpt-ad-[0-9]{13}-\d/g)
+
+  chrome.storage.sync.get(publisher, async () => {
+    scriptTags = await fetchScript().then(() => {
+      if (script)
+        scriptTags = script.match(/div-gpt-ad-[0-9]{13}-\d/g)
+      return scriptTags
+    }).catch((err) => {
+      console.log(err.message)
+    })
   })
 
   return scriptTags
@@ -353,13 +360,46 @@ let checkTags = (publisher) => {
     publisherObj.articleCheck = true
   else publisherObj.homepageCheck = true
 
-  // Upon completion the adUnitsInfo object is passed to the background.js
-  chrome.runtime.sendMessage({ command: 'publisher', publisher: publisherObj })
-
-  adUnitsInfo = publisherObj.adUnits
+  let json = {}
+  json[publisher] = publisherObj
+  updateStorage(json)
 }
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
+  let action = (command) => {
+
+    switch (command) {
+      case 'updateStorage':
+        let json = {}
+        json[message.publisher] = message.update
+        updateStorage(json).finally()
+        break
+      case 'showDetails':
+        showDetails()
+        break
+      case 'adstxt':
+        adstxt(message.url)
+        break
+      case 'checkTags':
+        checkTags(message.publisher)//.then(sendResponse('Check tags for publisher updated'))
+        break
+      default:
+        sendResponse({ result: "Unrecognized message.command" })
+    }
+
+    // True needs to be returned in all message listeners in order to keep the message channel
+    // open until a reponse is received
+    return true
+  }
+  console.log(message)
+
+  if (Array.isArray(message.command)) {
+    for (let command of message.command) {
+      action(command)
+    }
+  } else action(message.command)
+})
 
 class Publisher {
   constructor(name, adUnits) {
@@ -376,6 +416,7 @@ class Publisher {
   homepageCheck
   highlight
   adstxtCheck
+  scriptUrl
 }
 
 class AdUnit {
@@ -389,35 +430,3 @@ class AdUnit {
     this.sizes = []
   }
 }
-
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  let publisher = new URL(sender.url).hostname
-  console.log(message)
-
-  switch (message.command) {
-    case 'scriptUrl':
-      fetchScript(message.url, message.publisher)
-      break
-    case 'updateStorage':
-      let json = {}
-      json[message.publisher] = message.update
-      updateStorage(json).finally()
-      break
-    case 'showDetails':
-      showDetails()
-      break
-    case 'adstxt':
-      adstxt(message.url)
-      break
-    case 'checkTags':
-      // checkTags(message.publisher).then(sendResponse('Check tags for publisher updated'))
-      break
-    default:
-      sendResponse({ result: "Unrecognized message.command" })
-  }
-
-  // True needs to be returned in all message listeners in order to keep the message channel
-  // open until a reponse is received
-  return true
-})

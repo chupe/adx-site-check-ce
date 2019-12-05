@@ -131,9 +131,9 @@ let extractScriptUrl = () => {
 
     if (scriptUrl) {
         chrome.runtime.sendMessage({
-            command: 'scriptUrl',
-            url: scriptUrl,
-            publisher: activeTabHostname
+            command: 'updateStorage',
+            publisher: originUrl.hostname,
+            update: { scriptUrl: scriptUrl }
         })
     }
 }
@@ -172,4 +172,5 @@ window.onload = () => {
             adUnitsInfo = data[originUrl.hostname].adUnits
         }
     })
+    extractScriptUrl()
 }

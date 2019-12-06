@@ -1,5 +1,5 @@
-.highlightAdUnits {
-}
+.highlightAdUnits {}
+
 .adUnits {
     margin: auto;
     background-color: red;
@@ -9,6 +9,11 @@
     justify-content: center;
     align-items: center;
 }
+
 .hideAdUnits {
     display: none;
+}
+
+p {
+    margin-bottom: 0px;
 }

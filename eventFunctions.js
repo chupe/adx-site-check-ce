@@ -1,3 +1,4 @@
+"use strict"
 
 // Converts sizes array to a string in a readable format
 let sizesAsText = (adUnit) => {
@@ -14,8 +15,8 @@ let createAdUnits = (adUnitsInfo) => {
     adUnits.each((_index, element) => {
         let adUnitText = ''
         let name = ''
-        let height = 0
-        let width = 0
+        let height
+        let width
 
         // The adunit is susposed to contain the name and all
         // sizes as inner text

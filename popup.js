@@ -1,3 +1,5 @@
+"use strict"
+
 let highlightAdUnits = document.getElementById('highlightAdUnits'),
     hideAdUnits = document.getElementById('hideAdUnits'),
     checkTags = document.getElementById('checkTags'),

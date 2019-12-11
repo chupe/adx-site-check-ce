@@ -1,3 +1,5 @@
+"use strict"
+
 class Publisher {
     constructor(name, adUnits) {
         this.adUnits = adUnits

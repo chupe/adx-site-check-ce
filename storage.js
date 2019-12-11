@@ -1,3 +1,5 @@
+"use strict"
+
 // Pass to the function the information from the content script and the origin url so it can be
 // saved in storage under publisher name key
 let updateStorage = (update) => {

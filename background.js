@@ -1,3 +1,5 @@
+"use strict"
+
 chrome.runtime.onInstalled.addListener(() => {
     console.log("LuponMedia script started")
 })

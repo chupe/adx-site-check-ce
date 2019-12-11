@@ -1,3 +1,5 @@
+"use strict"
+
 // Fill adunit.sizes. Regexp to match the sizes array, than to match
 // individual size pair, parsed as ints and sorted according to surface area.
 let extractSizes = (name, definitionLine) => {
@@ -5,7 +7,7 @@ let extractSizes = (name, definitionLine) => {
     // Prepare adunit.name to be used inside regexp obj
     name = name.replace('.', '\\.')
     let regex = new RegExp("(?<=/" + name + "', ?\\[ ?).+(?= ?\\] ?, ?)", 'g')
-    let sizes = ''
+    let sizes
 
     sizes = definitionLine.match(regex)
     if (sizes) {
@@ -102,9 +104,13 @@ let divsFromSource = (pageUrl) => {
         for (let line of scriptLines) {
             let tempName = line.match(/(?<=\d{7,}\/).+?(?=',)/gi)
             let tempID = line.match(/(?<=], ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
-            adUnitSizes.push(extractSizes(tempName[0], line))
-            adUnitNames.push(tempName[0])
-            adUnitIDs.push(tempID[0])
+            let sizes = extractSizes(tempName[0], line)
+            if (sizes)
+                adUnitSizes.push(sizes)
+            if (tempName[0])
+                adUnitNames.push(tempName[0])
+            if (tempID[0])
+                adUnitIDs.push(tempID[0])
         }
 
         if (adUnitIDs) {

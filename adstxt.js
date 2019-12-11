@@ -1,3 +1,5 @@
+"use strict"
+
 let adstxt = (publisher) => {
   let origin = new URL(publisher).origin
   publisher = new URL(publisher).hostname

@@ -1,3 +1,5 @@
+"use strict"
+
 // Function to remove HTML nodes completly since they only get hidden
 // and child elements are stacking upon each apppendChild call
 let removeNode = (node) => {
@@ -25,7 +27,7 @@ let updateView = (activeTabHostname) => {
 
         // Update checkboxes
         adstxtCheck.checked = changes && changes.adstxtCheck ? changes.adstxtCheck : false
-        homepageCheck.checked = changes && changes.homepageCheck ? changes.homepageCheck : false
+        homeCheck.checked = changes && changes.homepageCheck ? changes.homepageCheck : false
         articleCheck.checked = changes && changes.articleCheck ? changes.articleCheck : false
 
         // Create an element for 'tags info', div containing errors per ad unit

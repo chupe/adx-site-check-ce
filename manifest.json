@@ -5,13 +5,7 @@
     "version": "0.1",
     "author": "adnan.supic@luponmedia.com",
     "background": {
-        "scripts": [
-            "background.js",
-            "storage.js",
-            "entities.js",
-            "tagsEvaluation.js",
-            "adstxt.js"
-        ],
+        "page": "background.html",
         "persistent": false
     },
     "browser_action": {

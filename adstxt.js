@@ -1,12 +1,13 @@
-"use strict"
+import * as utilities from "./utilities.js"
+import * as storage from "./storage.js"
 
 let adstxt = (publisher) => {
   let origin = new URL(publisher).origin
   publisher = new URL(publisher).hostname
-  // let localAdstxt = fetchFromUrl('./ads.txt')
+  // let localAdstxt = utilities.fetchFromUrl('./ads.txt')
   let hostAdsTxt = new URL(origin + '/ads.txt')
 
-  // let adstxt = fetchFromUrl(hostAdsTxt)
+  // let adstxt = utilities.fetchFromUrl(hostAdsTxt)
 
   let missingLines = []
 
@@ -47,13 +48,15 @@ let adstxt = (publisher) => {
       adstxtMissingLines: missingLines,
       adstxtCheck: true
     }
-    updateStorage(json)
+    storage.update(json)
   }
 
-  Promise.all([fetchFromUrl('./ads.txt'), fetchFromUrl(hostAdsTxt)])
+  Promise.all([utilities.fetchFromUrl('./ads.txt'), utilities.fetchFromUrl(hostAdsTxt)])
     .then(([res1, res2]) => {
       compareAdsTxt(res1, res2)
     }).catch((e, res1) => {
       console.log(e)
     })
 }
+
+export { adstxt }

@@ -1,4 +1,5 @@
-"use strict"
+import * as storage from "./storage.js"
+import * as check from "./check.js"
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log("LuponMedia script started")
@@ -21,16 +22,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             case 'updateStorage':
                 let json = {}
                 json[message.publisher] = message.update
-                updateStorage(json).finally()
+                storage.update(json).finally()
                 break
             case 'showDetails':
-                showDetails()
+                storage.showDetails()
                 break
             case 'adstxt':
-                adstxt(message.originUrl)
+                check.adstxt(message.originUrl)
                 break
             case 'checkTags':
-                checkTags(message.publisher, message.url)
+                check.tags(message.publisher, message.url)
                 break
             default:
                 sendResponse({ result: "Unrecognized message.command" })

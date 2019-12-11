@@ -1,5 +1,3 @@
-"use strict"
-
 class Publisher {
     constructor(name, adUnits) {
         this.adUnits = adUnits
@@ -23,12 +21,14 @@ class AdUnit {
         this.inScript = false
         this.sizes = []
     }
-    
+
     setSection(section) {
         if (['article', 'homepage', 'category'].indexOf(section) == -1)
             throw new Error('Section property on the ad unit does not match')
-            
+
         if (this.section.indexOf(section) == -1)
             this.section.push(section)
     }
 }
+
+export { Publisher, AdUnit }

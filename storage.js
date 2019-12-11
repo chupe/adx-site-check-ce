@@ -2,7 +2,7 @@
 
 // Pass to the function the information from the content script and the origin url so it can be
 // saved in storage under publisher name key
-let updateStorage = (update) => {
+let update = (update) => {
     return new Promise((resolve, reject) => {
 
         let publisher = Object.keys(update)[0]
@@ -92,3 +92,5 @@ let showDetails = () => {
         })
     })
 }
+
+export { update, showDetails }

@@ -1,4 +1,7 @@
-"use strict"
+import * as utilities from "./utilities.js"
+import * as storage from "./storage.js"
+import { adstxt } from "./adstxt.js"
+import { Publisher, AdUnit } from "./entities.js"
 
 // Fill adunit.sizes. Regexp to match the sizes array, than to match
 // individual size pair, parsed as ints and sorted according to surface area.
@@ -40,27 +43,11 @@ let extractSizes = (name, definitionLine) => {
     return sizes
 }
 
-let fetchFromUrl = (url) => {
-    return new Promise((resolve, reject) => {
-        let xhr = new XMLHttpRequest()
-        xhr.open('GET', url, true)
-        xhr.responseType = 'text'
-        xhr.addEventListener("loadend", function () {
-            let doc = this.responseText
-            if (this.status == 404)
-                reject('Fetch from url failed to load the source! Status: ' + this.status)
-            else
-                resolve(doc)
-        })
-        xhr.send()
-    })
-}
-
 // Returns an array of div-gpt tags from adxbid script
 // unless parameter is missing. If so returns empty array
 let tagsFromScript = (url) => {
 
-    return fetchFromUrl(url)
+    return utilities.fetchFromUrl(url)
         .then(
             (sourceCode) => {
                 let scriptUrl = sourceCode.match(/https:\/\/adxbid\.(info|me)\/[a-z,0-_]+\.js/gi)
@@ -69,7 +56,7 @@ let tagsFromScript = (url) => {
                 else return scriptUrl
             }
         )
-        .then(fetchFromUrl)
+        .then(utilities.fetchFromUrl)
         .then((script) => {
             if (script) {
                 let scriptTags = script.match(/(?<=code: ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
@@ -140,7 +127,7 @@ let divsFromSource = (pageUrl) => {
         return htmlTags
     }
 
-    return fetchFromUrl(url).then(matchSourceInfo)
+    return utilities.fetchFromUrl(url).then(matchSourceInfo)
 }
 
 // Returns an array of objects containing info about each tag.
@@ -195,15 +182,17 @@ let checkPageTags = async (url) => {
 
     let json = {}
     json[publisher] = publisherObj
-    updateStorage(json)
+    storage.update(json)
 }
 
 // Contains three functions to get information in the form of an array
 // from the script, head and body sections. After it has been completed
 // the resulting arrays go inside evaluateTags.
-let checkTags = async (publisher, url) => {
+export function tags(publisher, url) {
     let fmtURL = new URL(url)
     checkPageTags(fmtURL.origin)
     if (fmtURL.pathname !== '/')
         checkPageTags(url)
 }
+
+export { adstxt }

@@ -1,18 +1,10 @@
-import * as storage from "./storage.js"
+import * as storage from "../common/storage.js"
 import * as check from "./check.js"
+import { formatForStore } from "../common/utilities.js"
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log("LuponMedia script started")
 })
-
-let getHostname = () => {
-    return new Promise((resolve, reject) => {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            let activeTabHostname = new URL(tabs[0].url).hostname
-            return resolve(activeTabHostname)
-        })
-    })
-}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
@@ -20,18 +12,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         switch (command) {
             case 'updateStorage':
-                let json = {}
-                json[message.publisher] = message.update
-                storage.update(json).finally()
-                break
-            case 'showDetails':
-                storage.showDetails()
+                throw new Error('update storage messaging is not in use')
+                // storage.update(formatForStore(message.publisher, message.update)).finally()
                 break
             case 'adstxt':
                 check.adstxt(message.originUrl)
                 break
             case 'checkTags':
-                check.tags(message.publisher, message.url)
+                check.tags(message.url)
                 break
             default:
                 sendResponse({ result: "Unrecognized message.command" })

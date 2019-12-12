@@ -3,8 +3,9 @@
 let update = (update) => {
     return new Promise((resolve, reject) => {
 
-        let publisher = Object.keys(update)[0]
-        let newData = update[publisher]
+        // let publisher = Object.keys(update)[0]
+        let publisher = update.name
+        let newData = update
         chrome.storage.sync.get(publisher, (data) => {
             let oldData = data[publisher]
             if (!oldData) {
@@ -20,7 +21,7 @@ let update = (update) => {
                     // Do not update adUnits property
                     if (info == 'adUnits')
                         continue
-                        
+
                     // Normaly is a property is set once to true it is not
                     // suposed to be overwritten as a false or undefined
                     if (newData[info])
@@ -85,17 +86,26 @@ let update = (update) => {
     })
 }
 
-let showDetails = () => {
+let showDetails = async (publisher) => {
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        let activeTabHostname = new URL(tabs[0].url).hostname
+    let bkg = chrome.extension.getBackgroundPage()
 
-        chrome.storage.sync.get(activeTabHostname, (data) => {
-
-            // The detailed information about the current site is displayed
-            // inside extension console
-            console.log(activeTabHostname, data[activeTabHostname])
+    let getActiveTab = () => {
+        return new Promise((resolve, reject) => {
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                let activeTabHostname = new URL(tabs[0].url).hostname
+                resolve(activeTabHostname)
+            })
         })
+    }
+    if (!publisher) {
+        publisher = await getActiveTab()
+    }
+
+    chrome.storage.sync.get(publisher, (data) => {
+        // The detailed information about the current site is displayed
+        // inside extension console
+        bkg.console.log(publisher, data[publisher])
     })
 }
 

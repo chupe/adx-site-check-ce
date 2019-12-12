@@ -1,5 +1,7 @@
 // @ts-nocheck
 import * as view from './view.js'
+import * as storage from '../common/storage.js'
+import * as utilities from '../common/utilities.js'
 
 let highlightAdUnits = document.getElementById('highlightAdUnits'),
     hideAdUnits = document.getElementById('hideAdUnits'),
@@ -21,10 +23,9 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     activeTabOrigin = activeTabUrl.origin
     chrome.storage.sync.get(activeTabHostname, (data) => {
         if (!data[activeTabHostname]) {
-            chrome.runtime.sendMessage({
-                command: 'updateStorage',
-                publisher: activeTabHostname,
-                update: { highlight: false }
+            storage.update({
+                name: activeTabHostname,
+                highlight: false
             })
         } else {
 
@@ -50,10 +51,9 @@ clearStorage.onclick = () => {
 highlightAdUnits.onchange = function () {
     let value = this.checked
 
-    chrome.runtime.sendMessage({
-        command: 'updateStorage',
-        publisher: activeTabHostname,
-        update: { highlight: value }
+    storage.update({
+        name: activeTabHostname,
+        highlight: value
     })
 
     // Pass highlight or unhighlight message to content script 
@@ -90,10 +90,7 @@ checkAdsTxt.onclick = () => {
 }
 
 showDetails.onclick = () => {
-    chrome.runtime.sendMessage({
-        command: 'showDetails',
-        publisher: activeTabHostname
-    })
+    storage.showDetails()
 }
 
 // Check tags function sendsMessage for the content script to check tags

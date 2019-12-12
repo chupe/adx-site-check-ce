@@ -1,7 +1,6 @@
-import * as utilities from "./utilities.js"
-import * as storage from "./storage.js"
-import { adstxt } from "./adstxt.js"
-import { Publisher, AdUnit } from "./entities.js"
+import { AdUnit, Publisher } from './entities.js'
+import * as utilities from '../common/utilities.js'
+import * as storage from '../common/storage.js'
 
 // Fill adunit.sizes. Regexp to match the sizes array, than to match
 // individual size pair, parsed as ints and sorted according to surface area.
@@ -65,8 +64,7 @@ let tagsFromScript = (url) => {
                 else
                     console.log('No tags found in the script')
             } else
-                console.log('Script not downloaded from url provided')
-
+                console.log('Script can not be downloaded from the url provided')
         }).catch((err) => {
             console.log(err)
         })
@@ -88,17 +86,19 @@ let divsFromSource = (pageUrl) => {
         sourceCode = sourceCode.replace(/<!--[\s\S]*?-->/gi, '')
 
         let scriptLines = sourceCode.match(/(?<!\/\/)googletag.defineSlot\('\/[\S\s]*?(?=\)\.addService\(googletag.pubads\(\)\))/gi)
-        for (let line of scriptLines) {
-            let tempName = line.match(/(?<=googletag.defineSlot\('\/\d{7,}\/).+?(?=',)/gi)
-            console.log('line: ', tempName, line)
-            let tempID = line.match(/(?<=], ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
-            let sizes = extractSizes(tempName[0], line)
-            if (sizes)
-                adUnitSizes.push(sizes)
-            if (tempName[0])
-                adUnitNames.push(tempName[0])
-            if (tempID[0])
-                adUnitIDs.push(tempID[0])
+
+        if (scriptLines && scriptLines.length > 0) {
+            for (let line of scriptLines) {
+                let tempName = line.match(/(?<=googletag.defineSlot\('\/\d{7,}\/).+?(?=',)/gi)
+                let tempID = line.match(/(?<=], ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
+                let sizes = extractSizes(tempName[0], line)
+                if (sizes)
+                    adUnitSizes.push(sizes)
+                if (tempName[0])
+                    adUnitNames.push(tempName[0])
+                if (tempID[0])
+                    adUnitIDs.push(tempID[0])
+            }
         }
 
         if (adUnitIDs) {
@@ -156,7 +156,10 @@ let evaluateTags = (headTags, bodyDivs, scriptTags, publisher, section) => {
         adUnitsInfo[adUnit.name] = adUnit
     }
 
-    return adUnitsInfo
+    if (utilities.hasProperties(adUnitsInfo))
+        return adUnitsInfo
+    else
+        return undefined
 }
 
 let checkPageTags = async (url) => {
@@ -181,19 +184,7 @@ let checkPageTags = async (url) => {
 
     publisherObj.adUnits = adUnitsInfo
 
-    let json = {}
-    json[publisher] = publisherObj
-    storage.update(json)
+    storage.update(publisherObj)
 }
 
-// Contains three functions to get information in the form of an array
-// from the script, head and body sections. After it has been completed
-// the resulting arrays go inside evaluateTags.
-export function tags(publisher, url) {
-    let fmtURL = new URL(url)
-    checkPageTags(fmtURL.origin)
-    if (fmtURL.pathname !== '/')
-        checkPageTags(url)
-}
-
-export { adstxt }
+export { checkPageTags }

@@ -1,14 +1,10 @@
-import * as utilities from "./utilities.js"
-import * as storage from "./storage.js"
+import * as utilities from "../common/utilities.js"
+import * as storage from "../common/storage.js"
 
 let adstxt = (publisher) => {
   let origin = new URL(publisher).origin
   publisher = new URL(publisher).hostname
-  // let localAdstxt = utilities.fetchFromUrl('./ads.txt')
   let hostAdsTxt = new URL(origin + '/ads.txt')
-
-  // let adstxt = utilities.fetchFromUrl(hostAdsTxt)
-
   let missingLines = []
 
   // The function loads static ads.txt from local folder, splits it into
@@ -43,15 +39,14 @@ let adstxt = (publisher) => {
         missingLines.push(localLine)
     }
 
-    let json = {}
-    json[publisher] = {
+    storage.update({
+      name: publisher,
       adstxtMissingLines: missingLines,
       adstxtCheck: true
-    }
-    storage.update(json)
+    })
   }
 
-  Promise.all([utilities.fetchFromUrl('./ads.txt'), utilities.fetchFromUrl(hostAdsTxt)])
+  Promise.all([utilities.fetchFromUrl('../common/ads.txt'), utilities.fetchFromUrl(hostAdsTxt)])
     .then(([res1, res2]) => {
       compareAdsTxt(res1, res2)
     }).catch((e, res1) => {

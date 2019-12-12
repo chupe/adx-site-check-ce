@@ -1,5 +1,5 @@
 // ts-nocheck
-import * as utilities from './utilities.js'
+import * as utilities from '../common/utilities.js'
 
 // Update displayed info. When changes object is passed the function check
 // if there are 'unchecked' keys, in which case the user should check them as

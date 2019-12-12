@@ -1,4 +1,4 @@
-export function fetchFromUrl(url) {
+function fetchFromUrl(url) {
     return new Promise((resolve, reject) => {
         let xhr = new XMLHttpRequest()
         xhr.open('GET', url, true)
@@ -13,3 +13,22 @@ export function fetchFromUrl(url) {
         xhr.send()
     })
 }
+
+// Function to remove HTML nodes completly since they only get hidden
+// and child elements are stacking upon each apppendChild call
+function removeNode(node) {
+    while (node.lastChild) {
+        node.removeChild(node.lastChild)
+    }
+    node.remove()
+}
+
+// Check if an object is empty or has properties
+function hasProperties(obj) {
+    for (let prop in obj) {
+        if (obj.hasOwnProperty(prop))
+            return true
+    }
+}
+
+export { fetchFromUrl, removeNode, hasProperties }

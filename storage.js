@@ -1,5 +1,3 @@
-"use strict"
-
 // Pass to the function the information from the content script and the origin url so it can be
 // saved in storage under publisher name key
 let update = (update) => {
@@ -22,7 +20,15 @@ let update = (update) => {
                     // Do not update adUnits property
                     if (info == 'adUnits')
                         continue
+                        
+                    // Normaly is a property is set once to true it is not
+                    // suposed to be overwritten as a false or undefined
                     if (newData[info])
+                        oldData[info] = newData[info]
+
+                    // Highlight differs from other properties in that it is
+                    // suposed to be changed frequently and not set (to true) once
+                    if (info == 'highlight')
                         oldData[info] = newData[info]
                 }
 

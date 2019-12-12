@@ -81,15 +81,16 @@ let divsFromSource = (pageUrl) => {
         let adUnitNames = []
         let adUnitSizes = []
         let headTags = []
-        let tempNames = []
-        let tempIDs = []
+        // let tempNames = []
+        // let tempIDs = []
 
         // Get rid of HTML comments
         sourceCode = sourceCode.replace(/<!--[\s\S]*?-->/gi, '')
 
-        let scriptLines = sourceCode.match(/(?<=googletag.defineSlot\('\/)[\S\s]*?(?=\)\.addService\(googletag.pubads\(\)\))/gi)
+        let scriptLines = sourceCode.match(/(?<!\/\/)googletag.defineSlot\('\/[\S\s]*?(?=\)\.addService\(googletag.pubads\(\)\))/gi)
         for (let line of scriptLines) {
-            let tempName = line.match(/(?<=\d{7,}\/).+?(?=',)/gi)
+            let tempName = line.match(/(?<=googletag.defineSlot\('\/\d{7,}\/).+?(?=',)/gi)
+            console.log('line: ', tempName, line)
             let tempID = line.match(/(?<=], ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
             let sizes = extractSizes(tempName[0], line)
             if (sizes)

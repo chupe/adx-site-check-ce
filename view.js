@@ -1,28 +1,17 @@
-"use strict"
-
-// Function to remove HTML nodes completly since they only get hidden
-// and child elements are stacking upon each apppendChild call
-let removeNode = (node) => {
-    while (node.lastChild) {
-        node.removeChild(node.lastChild)
-    }
-    node.remove()
-}
-
-// Check if an object is empty or has properties
-let hasProperties = (obj) => {
-    for (let prop in obj) {
-        if (obj.hasOwnProperty(prop))
-            return true
-    }
-}
+// ts-nocheck
+import * as utilities from './utilities.js'
 
 // Update displayed info. When changes object is passed the function check
 // if there are 'unchecked' keys, in which case the user should check them as
 // suggested in the help text. The function appends the names of all adunits
 // and displays brief error information
-let updateView = (activeTabHostname) => {
+let update = (activeTabHostname) => {
     chrome.storage.sync.get(activeTabHostname, (data) => {
+        let homeCheck = document.getElementById('homepageCheck'),
+            articleCheck = document.getElementById('articleCheck'),
+            adstxtCheck = document.getElementById('adstxtCheck'),
+            infoContainer = document.getElementById('infoContainer')
+
         let changes = data[activeTabHostname]
 
         // Update checkboxes
@@ -34,15 +23,15 @@ let updateView = (activeTabHostname) => {
         // and ads.txt check info
         let tagsH4 = document.getElementById('tagsInfo')
         if (tagsH4)
-            removeNode(tagsH4)
+            utilities.removeNode(tagsH4)
 
         let adUnitErrsDiv = document.getElementById('adUnitErrs')
         if (adUnitErrsDiv)
-            removeNode(adUnitErrsDiv)
+            utilities.removeNode(adUnitErrsDiv)
 
         let adstxtH4 = document.getElementById('adstxt')
         if (adstxtH4)
-            removeNode(adstxtH4)
+            utilities.removeNode(adstxtH4)
 
         // In the beginning of the function call the information is cleared from the
         // popup.html and if the 'changes' parameter is empty than it's suposed to
@@ -52,7 +41,7 @@ let updateView = (activeTabHostname) => {
         let tagsInfo = document.createElement('h4')
         tagsInfo.id = 'tagsInfo'
 
-        if (changes && changes.adUnits && hasProperties(changes.adUnits)) {
+        if (changes && changes.adUnits && utilities.hasProperties(changes.adUnits)) {
             let adUnitErrs = document.createElement('div')
             adUnitErrs.id = 'adUnitErrs'
 
@@ -165,3 +154,5 @@ let updateView = (activeTabHostname) => {
     })
 
 }
+
+export { update }

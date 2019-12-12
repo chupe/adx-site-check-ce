@@ -1,15 +1,12 @@
-"use strict"
+// @ts-nocheck
+import * as view from './view.js'
 
 let highlightAdUnits = document.getElementById('highlightAdUnits'),
     hideAdUnits = document.getElementById('hideAdUnits'),
     checkTags = document.getElementById('checkTags'),
     showDetails = document.getElementById('showDetails'),
     checkAdsTxt = document.getElementById('checkAdsTxt'),
-    clearStorage = document.getElementById('clearStorage'),
-    homeCheck = document.getElementById('homepageCheck'),
-    articleCheck = document.getElementById('articleCheck'),
-    adstxtCheck = document.getElementById('adstxtCheck'),
-    infoContainer = document.getElementById('infoContainer')
+    clearStorage = document.getElementById('clearStorage')
 
 let activeTabHostname,
     activeTabOrigin,
@@ -18,7 +15,7 @@ let activeTabHostname,
 // Get activeTabUrl since it is used in different parts of the file
 // and to be able to fetch fresh information from storage
 // that is relevant to the currently active tab url
-let activeTab = chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     activeTabUrl = new URL(tabs[0].url)
     activeTabHostname = activeTabUrl.hostname
     activeTabOrigin = activeTabUrl.origin
@@ -40,13 +37,13 @@ let activeTab = chrome.tabs.query({ active: true, currentWindow: true }, functio
                 })
             }
         }
-        updateView(activeTabHostname)
+        view.update(activeTabHostname)
     })
 })
 
 clearStorage.onclick = () => {
     chrome.storage.sync.clear(() => {
-        updateView()
+        view.update()
     })
 }
 
@@ -121,7 +118,7 @@ chrome.storage.onChanged.addListener((changes) => {
             // requiring the popup.html to be cleared of all error info elements
             if (isNew) {
                 chrome.storage.sync.get(activeTabHostname, (data) => {
-                    updateView(activeTabHostname)
+                    view.update(activeTabHostname)
                 })
             }
         }

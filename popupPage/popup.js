@@ -1,7 +1,6 @@
 // @ts-nocheck
 import * as view from './view.js'
 import * as storage from '../common/storage.js'
-import * as utilities from '../common/utilities.js'
 
 let highlightAdUnits = document.getElementById('highlightAdUnits'),
     hideAdUnits = document.getElementById('hideAdUnits'),

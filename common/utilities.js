@@ -1,8 +1,3 @@
-// () => {
-//     return {
-
-//     }
-// }
 function fetchFromUrl(url) {
     return new Promise((resolve, reject) => {
         if (!url)
@@ -40,12 +35,6 @@ function hasProperties(obj) {
     }
 }
 
-function formatForStore(publisher, data) {
-    let json = {}
-    json[publisher] = data
-    return json
-}
-
 let getHostname = () => {
     return new Promise((resolve, reject) => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -55,4 +44,4 @@ let getHostname = () => {
     })
 }
 
-export { fetchFromUrl, removeNode, hasProperties, formatForStore, getHostname }
+export { fetchFromUrl, removeNode, hasProperties, getHostname }

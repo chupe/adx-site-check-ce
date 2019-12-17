@@ -1,4 +1,6 @@
+let i = 1
 function fetchFromUrl(url) {
+    console.log(url, i++)
     return new Promise((resolve, reject) => {
         if (!url)
             reject('Url to fetch has not been provided')
@@ -44,4 +46,12 @@ let getHostname = () => {
     })
 }
 
-export { fetchFromUrl, removeNode, hasProperties, getHostname }
+function isIterable(obj) {
+    // checks for null and undefined
+    if (obj == null) {
+      return false;
+    }
+    return typeof obj[Symbol.iterator] === 'function';
+  }
+
+export { fetchFromUrl, removeNode, hasProperties, getHostname, isIterable }

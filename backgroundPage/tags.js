@@ -49,7 +49,7 @@ let tagsFromScript = (url) => {
     return utilities.fetchFromUrl(url)
         .then(
             (sourceCode) => {
-                let scriptUrl = sourceCode.match(/https:\/\/adxbid\.(info|me)\/[a-z,0-_]+\.js/gi)
+                let scriptUrl = sourceCode.match(/https:\/\/adxbid\.(info|me)\/[\S]+\.js/gi)
                 if (Array.isArray(scriptUrl))
                     return scriptUrl[0]
                 else return scriptUrl
@@ -87,7 +87,7 @@ let divsFromSource = (pageUrl) => {
 
         let scriptLines = sourceCode.match(/(?<!\/\/)googletag.defineSlot\('\/[\S\s]*?(?=\)\.addService\(googletag.pubads\(\)\))/gi)
 
-        if (scriptLines && scriptLines.length > 0) {
+        if (utilities.isIterable(scriptLines)) {
             for (let line of scriptLines) {
                 let tempName = line.match(/(?<=googletag.defineSlot\('\/\d{7,}\/).+?(?=',)/gi)
                 let tempID = line.match(/(?<=], ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
@@ -99,7 +99,7 @@ let divsFromSource = (pageUrl) => {
                 if (tempID[0])
                     adUnitIDs.push(tempID[0])
             }
-        }
+        } else console.log('Defining line in script tags have not been found (googletag.defineSlot)')
 
         if (adUnitIDs) {
             for (let i = 0; i < adUnitIDs.length; i++) {
@@ -143,15 +143,17 @@ let evaluateTags = (headTags, bodyDivs, scriptTags, publisher, section) => {
 
         adUnit.sizes = headTag.sizes
 
-        for (let scriptID of scriptTags) {
-            if (adUnitID == scriptID)
-                adUnit.inScript = true
-        }
+        if (utilities.isIterable(scriptTags))
+            for (let scriptID of scriptTags) {
+                if (adUnitID == scriptID)
+                    adUnit.inScript = true
+            }
 
-        for (let bodyID of bodyDivs) {
-            if (adUnitID == bodyID)
-                adUnit.setSection(section)
-        }
+        if (utilities.isIterable(bodyDivs))
+            for (let bodyID of bodyDivs) {
+                if (adUnitID == bodyID)
+                    adUnit.setSection(section)
+            }
 
         adUnitsInfo[adUnit.name] = adUnit
     }

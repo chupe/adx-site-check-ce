@@ -42,93 +42,100 @@ let extractSizes = (name, definitionLine) => {
     return sizes
 }
 
-// Returns an array of div-gpt tags from adxbid script
-// unless parameter is missing. If so returns empty array
-let tagsFromScript = (url) => {
+let matchSourceInfo = function (sourceCode) {
+    let adUnitIDs = []
+    let adUnitNames = []
+    let adUnitSizes = []
+    let headTags = []
+    // let tempNames = []
+    // let tempIDs = []
 
-    return utilities.fetchFromUrl(url)
-        .then(
-            (sourceCode) => {
-                let scriptUrl = sourceCode.match(/https:\/\/adxbid\.(info|me)\/[\S]+\.js/gi)
-                if (Array.isArray(scriptUrl))
-                    return scriptUrl[0]
-                else return scriptUrl
-            }
-        )
-        .then(utilities.fetchFromUrl)
-        .then((script) => {
-            if (script) {
-                let scriptTags = script.match(/(?<=code: ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
-                if (scriptTags)
-                    return scriptTags
-                else
-                    console.log('No tags found in the script')
-            } else
-                console.log('Script can not be downloaded from the url provided')
-        }).catch((err) => {
-            console.log(err)
-        })
-}
+    // Get rid of HTML comments
+    sourceCode = sourceCode.replace(/<!--[\s\S]*?-->/gi, '')
 
+    let scriptLines = sourceCode.match(/(?<!\/\/)googletag.defineSlot\('\/[\S\s]*?(?=\)\.addService\(googletag.pubads\(\)\))/gi)
 
-// Returns an array of div-gpt tags from DOM body
-let divsFromSource = (pageUrl) => {
-    let url = new URL(pageUrl)
-    let matchSourceInfo = function (sourceCode) {
-        let adUnitIDs = []
-        let adUnitNames = []
-        let adUnitSizes = []
-        let headTags = []
-        // let tempNames = []
-        // let tempIDs = []
-
-        // Get rid of HTML comments
-        sourceCode = sourceCode.replace(/<!--[\s\S]*?-->/gi, '')
-
-        let scriptLines = sourceCode.match(/(?<!\/\/)googletag.defineSlot\('\/[\S\s]*?(?=\)\.addService\(googletag.pubads\(\)\))/gi)
-
-        if (utilities.isIterable(scriptLines)) {
-            for (let line of scriptLines) {
-                let tempName = line.match(/(?<=googletag.defineSlot\('\/\d{7,}\/).+?(?=',)/gi)
-                let tempID = line.match(/(?<=], ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
-                let sizes = extractSizes(tempName[0], line)
-                if (sizes)
-                    adUnitSizes.push(sizes)
-                if (tempName[0])
-                    adUnitNames.push(tempName[0])
-                if (tempID[0])
-                    adUnitIDs.push(tempID[0])
-            }
-        } else console.log('Defining line in script tags have not been found (googletag.defineSlot)')
-
-        if (adUnitIDs) {
-            for (let i = 0; i < adUnitIDs.length; i++) {
-
-                // In rare cases when sizes array contains 'fluid'
-                // the name isnt matched correctly. When this is the case
-                // the name is substringed up to the first occurence of - ', marking
-                // the end of actual adunit name
-                if (adUnitNames[i].search("',") > -1)
-                    adUnitNames[i] = adUnitNames[i].substring(0, adUnitNames[i].search("',"))
-                headTags.push({
-                    ID: adUnitIDs[i],
-                    name: adUnitNames[i],
-                    sizes: adUnitSizes[i]
-                })
-            }
+    if (utilities.isIterable(scriptLines)) {
+        for (let line of scriptLines) {
+            let tempName = line.match(/(?<=googletag.defineSlot\('\/\d{7,}\/).+?(?=',)/gi)
+            let tempID = line.match(/(?<=], ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
+            let sizes = extractSizes(tempName[0], line)
+            if (sizes)
+                adUnitSizes.push(sizes)
+            if (tempName[0])
+                adUnitNames.push(tempName[0])
+            if (tempID[0])
+                adUnitIDs.push(tempID[0])
         }
+    } else console.log('Defining line in script tags have not been found (googletag.defineSlot)')
 
-        let bodyDivs = sourceCode.match(/(?<=<div.+id= ?["'])div-gpt-ad-\d{13}-\d{1,2}(?=["'])/g)
+    if (adUnitIDs) {
+        for (let i = 0; i < adUnitIDs.length; i++) {
 
-        let htmlTags = {
-            headTags: headTags,
-            bodyDivs: bodyDivs
+            // In rare cases when sizes array contains 'fluid'
+            // the name isnt matched correctly. When this is the case
+            // the name is substringed up to the first occurence of - ', marking
+            // the end of actual adunit name
+            if (adUnitNames[i].search("',") > -1)
+                adUnitNames[i] = adUnitNames[i].substring(0, adUnitNames[i].search("',"))
+            headTags.push({
+                ID: adUnitIDs[i],
+                name: adUnitNames[i],
+                sizes: adUnitSizes[i]
+            })
         }
-
-        return htmlTags
     }
 
-    return utilities.fetchFromUrl(url).then(matchSourceInfo)
+    let bodyDivs = sourceCode.match(/(?<=<div.+id= ?["'])div-gpt-ad-\d{13}-\d{1,2}(?=["'])/g)
+
+    let htmlTags = {
+        headTags: headTags,
+        bodyDivs: bodyDivs
+    }
+
+    return htmlTags
+}
+
+let getScriptUrl = (sourceCode) => {
+    let scriptUrl = sourceCode.match(/https:\/\/adxbid\.(info|me)\/[\S]+\.js/gi)
+    if (Array.isArray(scriptUrl))
+        return scriptUrl[0]
+    else return scriptUrl
+}
+
+// Returns an array of div-gpt tags from DOM body
+let tagsFromSources = (pageUrl) => {
+    let url = new URL(pageUrl)
+
+    return utilities.fetchFromUrl(url)
+        .then(async (sourceCode) => {
+            let scriptUrl = getScriptUrl(sourceCode)
+            let scriptSource = await utilities.fetchFromUrl(scriptUrl)
+
+            return {
+                sourceCode,
+                scriptSource
+            }
+        }).then(
+            (sources) => {
+                let { sourceCode, scriptSource } = sources
+                let { headTags, bodyDivs } = matchSourceInfo(sourceCode)
+                let scriptTags
+
+                if (scriptSource) {
+                    scriptTags = scriptSource.match(/(?<=code: ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
+                    if (!scriptTags)
+                        console.log('No tags found in the script')
+                } else
+                    console.log('Script can not be downloaded from the url provided')
+
+                return {
+                    headTags,
+                    bodyDivs,
+                    scriptTags
+                }
+            }
+        )
 }
 
 // Returns an array of objects containing info about each tag.
@@ -167,8 +174,7 @@ let evaluateTags = (headTags, bodyDivs, scriptTags, publisher, section) => {
 let checkPageTags = async (url) => {
     let fmtURL = new URL(url)
     let publisher = fmtURL.hostname
-    let { headTags, bodyDivs } = await divsFromSource(url)
-    let scriptTags = await tagsFromScript(url)
+    let { headTags, bodyDivs, scriptTags } = await tagsFromSources(url)
 
     let publisherObj = new Publisher(publisher)
 

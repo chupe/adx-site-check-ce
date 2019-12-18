@@ -96,8 +96,13 @@ let matchSourceInfo = function (sourceCode) {
     return htmlTags
 }
 
-let getScriptUrl = (sourceCode) => {
+let getScriptUrl = async (sourceCode) => {
+    let hostname = await utilities.getHostname()
     let scriptUrl = sourceCode.match(/https:\/\/adxbid\.(info|me)\/[\S]+\.js/gi)
+    storage.update({
+        name: hostname,
+        scripts: scriptUrl
+    })
     if (Array.isArray(scriptUrl))
         return scriptUrl[0]
     else return scriptUrl
@@ -109,7 +114,7 @@ let tagsFromSources = (pageUrl) => {
 
     return utilities.fetchFromUrl(url)
         .then(async (sourceCode) => {
-            let scriptUrl = getScriptUrl(sourceCode)
+            let scriptUrl = await getScriptUrl(sourceCode)
             let scriptSource = await utilities.fetchFromUrl(scriptUrl)
 
             return {

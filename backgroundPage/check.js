@@ -6,9 +6,9 @@ import { adstxt } from './adstxt.js'
 // the resulting arrays go inside evaluateTags.
 function tags(url) {
     let fmtURL = new URL(url)
-    checkPageTags(fmtURL.origin)
+    checkPageTags(fmtURL.origin).catch((e) => console.log(e))
     if (fmtURL.pathname !== '/')
-        checkPageTags(fmtURL.href)
+        checkPageTags(fmtURL.href).catch((e) => console.log(e))
 }
 
 export { adstxt, tags }

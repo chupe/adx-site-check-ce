@@ -42,13 +42,12 @@ let extractSizes = (name, definitionLine) => {
     return sizes
 }
 
+// Get ad units information from the page source code
 let matchSourceInfo = function (sourceCode) {
     let adUnitIDs = []
     let adUnitNames = []
     let adUnitSizes = []
     let headTags = []
-    // let tempNames = []
-    // let tempIDs = []
 
     // Get rid of HTML comments
     sourceCode = sourceCode.replace(/<!--[\s\S]*?-->/gi, '')
@@ -96,6 +95,7 @@ let matchSourceInfo = function (sourceCode) {
     return htmlTags
 }
 
+// Get script url as an array from the source code of the page
 let getScriptUrl = async (sourceCode) => {
     let hostname = await utilities.getHostname()
     let scriptUrl = sourceCode.match(/https:\/\/adxbid\.(info|me)\/[\S]+\.js/gi)
@@ -108,14 +108,16 @@ let getScriptUrl = async (sourceCode) => {
     else return scriptUrl
 }
 
-// Returns an array of div-gpt tags from DOM body
+// Get page source code, get adx script url from the source then get
+// script from the url found and finally get
+// ad units information from the page source code and the script source
 let tagsFromSources = (pageUrl) => {
     let url = new URL(pageUrl)
 
     return utilities.fetchFromUrl(url)
         .then(async (sourceCode) => {
             let scriptUrl = await getScriptUrl(sourceCode)
-            let scriptSource = await utilities.fetchFromUrl(scriptUrl)
+            let scriptSource = await utilities.fetchFromUrl(scriptUrl).catch((e) => console.log(e))
 
             return {
                 sourceCode,
@@ -132,7 +134,7 @@ let tagsFromSources = (pageUrl) => {
                     if (!scriptTags)
                         console.log('No tags found in the script')
                 } else
-                    console.log('Script can not be downloaded from the url provided')
+                    console.log('Script can\'t be downloaded from the url provided')
 
                 return {
                     headTags,
@@ -185,6 +187,8 @@ let checkPageTags = async (url) => {
 
     let section = ''
 
+    // If the page url has a path it is treated as an article,
+    // else it is considered a homepage
     if (fmtURL.pathname != '/') {
         section = 'article'
         publisherObj.articleCheck = true

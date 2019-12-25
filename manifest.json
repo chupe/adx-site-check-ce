@@ -43,6 +43,7 @@
         "storage",
         "activeTab",
         "declarativeContent",
-        "tabs"
+        "tabs",
+        "accessibilityFeatures.read"
     ]
 }

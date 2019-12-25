@@ -52,12 +52,12 @@ let matchSourceInfo = function (sourceCode) {
     // Get rid of HTML comments
     sourceCode = sourceCode.replace(/<!--[\s\S]*?-->/gi, '')
 
-    let scriptLines = sourceCode.match(/(?<!\/\/)googletag.defineSlot\('\/[\S\s]*?(?=\)\.addService\(googletag.pubads\(\)\))/gi)
+    let scriptLines = sourceCode.match(/(?<!\/\/)googletag.defineSlot\(['"]\/[\S\s]*?\)\.addService\(googletag.pubads\(\)\)/gi)
 
     if (utilities.isIterable(scriptLines)) {
         for (let line of scriptLines) {
-            let tempName = line.match(/(?<=googletag.defineSlot\('\/\d{7,}\/).+?(?=',)/gi)
-            let tempID = line.match(/(?<=], ?')div-gpt-ad-\d{13}-\d{1,2}(?=')/g)
+            let tempName = line.match(/(?<=googletag.defineSlot\(['"]\/\d{7,}\/).+?(?=['"],)/gi)
+            let tempID = line.match(/(?<=, ?['"])[0-z-_]+(?=['"]\)\.addService\()/gi)
             let sizes = extractSizes(tempName[0], line)
             if (sizes)
                 adUnitSizes.push(sizes)
@@ -85,7 +85,14 @@ let matchSourceInfo = function (sourceCode) {
         }
     }
 
-    let bodyDivs = sourceCode.match(/(?<=<div.+id= ?["'])div-gpt-ad-\d{13}-\d{1,2}(?=["'])/g)
+    let bodyDivs = []
+
+    for (let ID of adUnitIDs) {
+        let reg = new RegExp(`(?<=<div.+id= ?["'])` + ID + `(?=["'])`, 'gi')
+        let tempID = sourceCode.match(reg)
+        if (tempID)
+            bodyDivs.push(tempID[0])
+    }
 
     let htmlTags = {
         headTags: headTags,

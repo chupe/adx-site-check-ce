@@ -2,7 +2,7 @@
     "typeAcquisition": {
         "include": [
             "jquery",
-            "chrome"
+            "chrome",
         ]
     },
     "compilerOptions": {

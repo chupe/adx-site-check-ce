@@ -32,6 +32,9 @@
             ]
         }
     ],
+    "web_accessible_resources": [
+        "/content/gpt-access.js"
+    ],
     "icons": {
         "16": "images/get_started16.png",
         "32": "images/get_started32.png",

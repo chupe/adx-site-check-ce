@@ -81,5 +81,20 @@ window.onload = () => {
         if (data[originUrl.hostname]) {
             adUnitsInfo = data[originUrl.hostname].adUnits
         }
-    })
+    })    
 }
+
+
+let s = document.createElement('script')
+s.src = chrome.extension.getURL('./content/gpt-access.js')
+let head = document.head || document.documentElement
+head.appendChild(s)
+s.onload = function () {
+    s.remove()
+}
+
+// Event listener
+document.addEventListener('adunits', function (e) {
+    // @ts-ignore
+    console.log(e.detail)
+})

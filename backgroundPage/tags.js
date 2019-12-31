@@ -2,71 +2,25 @@ import { AdUnit, Publisher } from './entities.js'
 import * as utilities from '../common/utilities.js'
 import * as storage from '../common/storage.js'
 
-// Fill adunit.sizes. Regexp to match the sizes array, than to match
-// individual size pair, parsed as ints and sorted according to surface area.
-let extractSizes = (name, definitionLine) => {
-
-    // Prepare adunit.name to be used inside regexp obj
-    name = name.replace('.', '\\.')
-    let regex = new RegExp("(?<=/" + name + "', ?\\[ ?).+(?= ?\\] ?, ?)", 'g')
-    let sizes
-
-    sizes = definitionLine.match(regex)
-    if (sizes) {
-        let reg = new RegExp(", ?", 'g')
-
-        // If ad unit has one size it does not have two pairs of braces,
-        // and requires different approach to turn it into array of int
-        if (!sizes[0].match(/\[[0-9]{3},[ ]*[0-9]{2,}\]/g)) {
-            sizes = sizes[0].split(reg)
-            sizes = [parseInt(sizes[0]), parseInt(sizes[1])]
-            sizes = [sizes]
-        } else {
-            sizes = sizes[0].match(/\[[0-9]{3},[ ]*[0-9]{2,}\]/g)
-            sizes = sizes.map((size) => {
-                size = size.replace(/[\[ \])]?/g, '')
-                size = size.split(reg)
-                size[0] = parseInt(size[0])
-                size[1] = parseInt(size[1])
-
-                return size
-            })
-
-            // Sort according to surface area of an ad unit
-            sizes.sort((a, b) => {
-                return b[0] * b[1] - a[0] * a[1]
-            })
-        }
-    }
-
-    return sizes
-}
-
 // Get ad units information from the page source code
-let matchSourceInfo = function (sourceCode) {
+let matchSourceInfo = async function (sourceCode, hostname) {
     let adUnitIDs = []
     let adUnitNames = []
     let adUnitSizes = []
     let headTags = []
 
+    // Retrive data and extract information to be a reference
+    // for script and body tags
+    let data = await storage.getTabInfo(hostname)
+    let adUnits = data.adUnits
+    for (let adUnit in adUnits) {
+        adUnitIDs.push(adUnits[adUnit].ID)
+        adUnitNames.push(adUnits[adUnit].name)
+        adUnitSizes.push(adUnits[adUnit].sizes)
+    }
+
     // Get rid of HTML comments
     sourceCode = sourceCode.replace(/<!--[\s\S]*?-->/gi, '')
-
-    let scriptLines = sourceCode.match(/(?<!\/\/)googletag.defineSlot\(['"]\/[\S\s]*?\)\.addService\(googletag.pubads\(\)\)/gi)
-
-    if (utilities.isIterable(scriptLines)) {
-        for (let line of scriptLines) {
-            let tempName = line.match(/(?<=googletag.defineSlot\(['"]\/\d{7,}\/).+?(?=['"],)/gi)
-            let tempID = line.match(/(?<=, ?['"])[0-z-_]+(?=['"]\)\.addService\()/gi)
-            let sizes = extractSizes(tempName[0], line)
-            if (sizes)
-                adUnitSizes.push(sizes)
-            if (tempName[0])
-                adUnitNames.push(tempName[0])
-            if (tempID[0])
-                adUnitIDs.push(tempID[0])
-        }
-    } else console.log('Defining line in script tags have not been found (googletag.defineSlot)')
 
     if (adUnitIDs) {
         for (let i = 0; i < adUnitIDs.length; i++) {
@@ -123,17 +77,23 @@ let tagsFromSources = (pageUrl) => {
 
     return utilities.fetchFromUrl(url)
         .then(async (sourceCode) => {
-            let scriptUrl = await getScriptUrl(sourceCode)
-            let scriptSource = await utilities.fetchFromUrl(scriptUrl).catch((e) => console.log(e))
+            let scriptUrl = await getScriptUrl(sourceCode.doc)
+            let scriptSource
+
+            if (scriptUrl) {
+                let { doc, url } = await utilities.fetchFromUrl(scriptUrl).catch((e) => console.log(e))
+                scriptSource = doc
+            }
 
             return {
-                sourceCode,
-                scriptSource
+                sourceCode: sourceCode.doc,
+                scriptSource,
+                hostname: new URL(pageUrl).hostname
             }
         }).then(
-            (sources) => {
-                let { sourceCode, scriptSource } = sources
-                let { headTags, bodyDivs } = matchSourceInfo(sourceCode)
+            async (sources) => {
+                let { sourceCode, scriptSource, hostname } = sources
+                let { headTags, bodyDivs } = await matchSourceInfo(sourceCode, hostname)
                 let scriptTags
 
                 if (scriptSource) {

@@ -1,9 +1,10 @@
+import * as util from './utilities.js'
+
 // Pass to the function the information from the content script and the origin url so it can be
 // saved in storage under publisher name key
 let update = (update) => {
-    return new Promise((resolve, reject) => {
 
-        // let publisher = Object.keys(update)[0]
+    return new Promise((resolve, reject) => {
         let publisher = update.name
         let newData = update
         chrome.storage.sync.get(publisher, (data) => {
@@ -52,8 +53,11 @@ let update = (update) => {
                                     if (details == 'section') {
                                         if (homepageCheck
                                             && newAdUnits[adUnit][details].indexOf('homepage') >= 0
-                                            && oldAdUnits[adUnit][details].indexOf('homepage') == -1)
+                                            && (!oldAdUnits[adUnit][details] || oldAdUnits[adUnit][details].indexOf('homepage') == -1)) {
+                                            if (!oldAdUnits[adUnit][details])
+                                                oldAdUnits[adUnit][details] = []
                                             oldAdUnits[adUnit][details].push('homepage')
+                                        }
 
                                         if (articleCheck
                                             && newAdUnits[adUnit][details].indexOf('article') >= 0
@@ -86,27 +90,23 @@ let update = (update) => {
     })
 }
 
-let showDetails = async (publisher) => {
+let getTabInfo = (hostname) => {
 
-    let bkg = chrome.extension.getBackgroundPage()
+    return new Promise(async (res, rej) => {
+        if (!hostname) {
+            let activeTabHostname = await util.getHostname()
+            hostname = activeTabHostname
+        }
 
-    let getActiveTab = () => {
-        return new Promise((resolve, reject) => {
-            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-                let activeTabHostname = new URL(tabs[0].url).hostname
-                resolve(activeTabHostname)
-            })
+        chrome.storage.sync.get(hostname, (data) => {
+            res(data[hostname])
         })
-    }
-    if (!publisher) {
-        publisher = await getActiveTab()
-    }
-
-    chrome.storage.sync.get(publisher, (data) => {
-        // The detailed information about the current site is displayed
-        // inside extension console
-        bkg.console.log(publisher, data[publisher])
     })
 }
 
-export { update, showDetails }
+let showDetails = async () => {
+    let bkg = chrome.extension.getBackgroundPage()
+    bkg.console.log(await getTabInfo())
+}
+
+export { update, showDetails, getTabInfo }

@@ -16,27 +16,36 @@ function getAdUnits() {
         let ID = adUnit.getSlotId().getDomId()
         let sizes = adUnit.getSizes()
 
+        let arraySizes = []
+
         for (let size of sizes) {
-
-            Object.defineProperty(size, 'w',
-                Object.getOwnPropertyDescriptor(size, 'l'))
-            delete size['l']
-
-            Object.defineProperty(size, 'h',
-                Object.getOwnPropertyDescriptor(size, 'j'))
-            delete size['j']
+            let array = []
+            array.push(size.l, size.j)
+            arraySizes.push(array)
         }
+
+        arraySizes.sort((a, b) => {
+            return b[0] * b[1] - a[0] * a[1]
+        })
 
         result[name] = {
             name,
             ID,
-            sizes
+            sizes: arraySizes,
+            section: []
         }
     }
 
     return result
 }
 
-if (typeof gt !== 'undefined') {
-    console.log(getAdUnits())
-}
+if (gt)
+    send(getAdUnits())
+
+// Event listener
+document.addEventListener('getInfo', (e) => {
+    if (typeof gt !== 'undefined') {
+        let adUnits = getAdUnits()
+        send(adUnits)
+    }
+})

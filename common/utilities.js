@@ -11,7 +11,7 @@ function fetchFromUrl(url) {
                 if (this.status == 404)
                     reject('Fetch from url failed to load the source! Status: ' + this.status)
                 else
-                    resolve(doc)
+                    resolve({ doc, url })
             })
             xhr.send()
         }

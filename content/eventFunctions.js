@@ -12,7 +12,7 @@ let sizesAsText = (adUnit) => {
 }
 
 let createAdUnits = (adUnitsInfo) => {
-    adUnits.each((_index, element) => {
+    for (let element of adUnits) {
         let adUnitText = ''
         let name = ''
         let height
@@ -27,6 +27,7 @@ let createAdUnits = (adUnitsInfo) => {
             // Since div contains only ID and adUnitsInfo object
             // has names as keys the adUnitsInfo object need to be
             // matched by ID and accessed by adunit name
+
             if (elementId == currentAdUnit.ID) {
                 let sizes = sizesAsText(currentAdUnit)
                 name = currentAdUnit.name
@@ -54,7 +55,7 @@ let createAdUnits = (adUnitsInfo) => {
         $(newDiv).on('click', changeSize)
 
         element.appendChild(newDiv)
-    })
+    }
 }
 
 
@@ -69,6 +70,7 @@ let changeSize = function () {
         if (width * height > size[0] * size[1]) {
             $(this).width(size[0])
             $(this).height(size[1])
+
             break
         }
     }

@@ -48,8 +48,8 @@ let adstxt = (publisher) => {
 
   Promise.all([utilities.fetchFromUrl('../common/ads.txt'), utilities.fetchFromUrl(hostAdsTxt)])
     .then(([res1, res2]) => {
-      compareAdsTxt(res1, res2)
-    }).catch((e, res1) => {
+      compareAdsTxt(res1.doc, res2.doc)
+    }).catch((e) => {
       console.log(e)
     })
 }

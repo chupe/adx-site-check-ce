@@ -1,4 +1,5 @@
 import * as check from "./check.js"
+import * as storage from "../common/storage.js"
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log("LuponMedia script started")
@@ -14,6 +15,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 break
             case 'checkTags':
                 check.tags(message.url)
+                break
+            case 'store':
+                storage.update(message.update)
                 break
             default:
                 sendResponse({ result: "Unrecognized message.command" })

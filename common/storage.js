@@ -28,9 +28,12 @@ let update = (update) => {
                     if (newData[info])
                         oldData[info] = newData[info]
 
-                    // Highlight differs from other properties in that it is
+                    // Highlight and showDetails differs from other properties in that it is
                     // suposed to be changed frequently and not set (to true) once
                     if (info == 'highlight')
+                        oldData[info] = newData[info]
+
+                    if (info == 'showDetails')
                         oldData[info] = newData[info]
                 }
 
@@ -61,6 +64,7 @@ let update = (update) => {
 
                                         if (articleCheck
                                             && newAdUnits[adUnit][details].indexOf('article') >= 0
+                                            && oldAdUnits[adUnit][details]
                                             && oldAdUnits[adUnit][details].indexOf('article') == -1)
                                             oldAdUnits[adUnit][details].push('article')
 

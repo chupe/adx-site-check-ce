@@ -38,6 +38,7 @@ function hasProperties(obj) {
 let getHostname = () => {
     return new Promise((resolve, reject) => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length === 0) return reject('Unable to fetch active tab')
             let activeTabHostname = new URL(tabs[0].url).hostname
             return resolve(activeTabHostname)
         })

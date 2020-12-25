@@ -3,6 +3,7 @@
         "include": [
             "jquery",
             "chrome",
+            "gpt"
         ]
     },
     "compilerOptions": {

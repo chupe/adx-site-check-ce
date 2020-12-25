@@ -24,7 +24,8 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         if (!data[activeTabHostname]) {
             storage.update({
                 name: activeTabHostname,
-                highlight: false
+                highlight: false,
+                showDetails: false
             })
         } else {
 
@@ -32,8 +33,15 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
             highlightAdUnits.checked = data[activeTabHostname].highlight
             if (highlightAdUnits.checked) {
                 chrome.tabs.sendMessage(tabs[0].id, {
-                    command: "highlight",
+                    command: 'highlight',
                     highlight: highlightAdUnits.checked
+                })
+            }
+            showDetails.checked = data[activeTabHostname].showDetails
+            if (showDetails.checked) {
+                chrome.runtime.sendMessage({
+                    command: 'showDetails',
+                    showDetails: showDetails.checked
                 })
             }
         }
@@ -56,26 +64,27 @@ highlightAdUnits.onchange = function () {
     })
 
     // Pass highlight or unhighlight message to content script 
-    if (value) {
-        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, {
-                command: "highlight",
-                highlight: value
-            })
+    // if (value) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+            command: 'highlight',
+            highlight: value
         })
-    } else {
-        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, {
-                command: "unhighlight",
-                highlight: value
-            })
-        })
-    }
+    })
+    // }
+    // else {
+    //     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    //         chrome.tabs.sendMessage(tabs[0].id, {
+    //             command: 'unhighlight',
+    //             highlight: value
+    //         })
+    //     })
+    // }
 }
 
 hideAdUnits.onclick = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { command: "hide" })
+        chrome.tabs.sendMessage(tabs[0].id, { command: 'hide' })
     })
     highlightAdUnits.checked = false
 }
@@ -88,15 +97,20 @@ checkAdsTxt.onclick = () => {
     })
 }
 
-showDetails.onclick = () => {
-    storage.showDetails()
+showDetails.onchange = function () {
+    let value = this.checked
+
+    storage.update({
+        name: activeTabHostname,
+        showDetails: value
+    })
 }
 
 // Check tags function sendsMessage for the content script to check tags
 checkTags.onclick = () => {
 
     chrome.runtime.sendMessage({
-        command: "checkTags",
+        command: 'checkTags',
         publisher: activeTabHostname,
         url: activeTabUrl
     })

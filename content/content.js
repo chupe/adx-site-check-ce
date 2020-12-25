@@ -6,24 +6,30 @@ let adUnitsInfo
 let adUnits = []
 
 // Add css to make adunits visible even when they are unfilled
-let highlightAdUnits = function () {
-    $(adUnits).css("display", "")
-    $(adUnits).removeClass('hideAdUnits')
-    $(adUnits).addClass('highlightAdUnits')
-
-    // If there is not ad units information available start the process
-    // for extracting the required info by calling extractScriptUrl(). Since
-    // there is a delay for the process to complete and the information to get
-    // stored a setTimeout is to compensate at the moment
-    if (adUnitsInfo) {
+let highlightAdUnits = function (highlight) {
+    if (highlight) {
+        $(adUnits).css("display", "")
+        $('div[id^="google_ads_iframe_"]').css('display', 'none')
         createAdUnits(adUnitsInfo)
     } else {
-        chrome.runtime.sendMessage({
-            command: 'checkTags',
-            publisher: originUrl.hostname,
-            url: originUrl.href
-        })
+        $('.adUnits').css('display', 'none')
+
+        $('div[id^="google_ads_iframe_"]').css('display', '')
+
+        let iframes = document.querySelectorAll('div[id^="google_ads_iframe')
+        for (let iframe of iframes) {
+            if (iframe.children.length == 0)
+                iframe.style.display = 'none'
+        }
     }
+}
+
+let checkTags = function () {
+    chrome.runtime.sendMessage({
+        command: 'checkTags',
+        publisher: originUrl.hostname,
+        url: originUrl.href
+    })
 }
 
 // Remove css that makes adunits highlighted
@@ -33,27 +39,17 @@ let unhighlightAdUnits = function () {
 
 // Hide all adunits
 let hideAdUnits = function () {
-    $(adUnits).addClass('hideAdUnits')
-}
-
-// Append custom CSS and listeners. Check before appending if it has been
-// appended before
-let addListeners = function () {
-    highlightAdUnits()
-}
-
-let removeListeners = function () {
-    unhighlightAdUnits()
+    $(adUnits).css("display", "none")
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
     switch (request.command) {
         case 'highlight':
-            addListeners()
+            highlightAdUnits(request.highlight)
             break
         case 'unhighlight':
-            removeListeners()
+            unhighlightAdUnits()
             break
         case 'hide':
             hideAdUnits()
@@ -70,14 +66,21 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
 chrome.storage.onChanged.addListener(() => {
     chrome.storage.sync.get(originUrl.hostname, (data) => {
-        if (data[originUrl.hostname])
+        getInfo()
+        if (data[originUrl.hostname]) {
             adUnitsInfo = data[originUrl.hostname].adUnits
-        else adUnitsInfo = undefined
+        }
+        else checkTags()
     })
 })
 
 //on init perform based on chrome storage value
-window.onload = () => {
+if (document.readyState === 'complete')
+    init()
+else
+    window.onload = init
+
+function init() {
     originUrl = new URL(document.URL)
     chrome.storage.sync.get(originUrl.hostname, (data) => {
         if (data[originUrl.hostname]) {

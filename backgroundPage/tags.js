@@ -76,21 +76,23 @@ let tagsFromSources = (pageUrl) => {
     let url = new URL(pageUrl)
 
     return utilities.fetchFromUrl(url)
-        .then(async (sourceCode) => {
-            let scriptUrl = await getScriptUrl(sourceCode.doc)
-            let scriptSource
+        .then(
+            async (sourceCode) => {
+                let scriptUrl = await getScriptUrl(sourceCode.doc)
+                let scriptSource
 
-            if (scriptUrl) {
-                let { doc, url } = await utilities.fetchFromUrl(scriptUrl).catch((e) => console.log(e))
-                scriptSource = doc
-            }
+                if (scriptUrl) {
+                    let { doc, url } = await utilities.fetchFromUrl(scriptUrl).catch((e) => console.log(e))
+                    scriptSource = doc
+                }
 
-            return {
-                sourceCode: sourceCode.doc,
-                scriptSource,
-                hostname: new URL(pageUrl).hostname
-            }
-        }).then(
+                return {
+                    sourceCode: sourceCode.doc,
+                    scriptSource,
+                    hostname: new URL(pageUrl).hostname
+                }
+            })
+        .then(
             async (sources) => {
                 let { sourceCode, scriptSource, hostname } = sources
                 let { headTags, bodyDivs } = await matchSourceInfo(sourceCode, hostname)

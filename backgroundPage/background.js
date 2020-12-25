@@ -2,7 +2,7 @@ import * as check from "./check.js"
 import * as storage from "../common/storage.js"
 
 chrome.runtime.onInstalled.addListener(() => {
-    console.log("LuponMedia script started")
+    console.log("GPT check script started")
 })
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

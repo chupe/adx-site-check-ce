@@ -13,7 +13,7 @@ pubmatic.com, 154037,RESELLER
 rubiconproject.com,16114,RESELLER, 0bfd66d529a55807
 openx.com,537149888,RESELLER,6a698e2ec38604c6
 sovrn.com, 257611,RESELLER, fafdf38b16bf6b2b
-appnexus.com, 3703,RESELLER,f5ab79cb980f11d1
+appnexus.com,3703,RESELLER,f5ab79cb980f11d1
 districtm.io, 101690, DIRECT, 3fd707be9c4527c3
 appnexus.com, 1908, RESELLER, f5ab79cb980f11d1
 google.com, pub-9685734445476814, RESELLER, f08c47fec0942fa0
@@ -155,3 +155,10 @@ contextweb.com, 560489, RESELLER, 89ff185a4c4e857c
 contextweb.com,560859,RESELLER,89ff185a4c4e857c
 advertising.com, 11602, RESELLER
 appnexus.com, 9393, DIRECT
+sharethrough.com, 11214cca, DIRECT, d53b998a7bd4ecd2
+indexexchange.com, 186046, RESELLER
+spotxchange.com, 212457, RESELLER
+spotx.tv, 212457, RESELLER
+pubmatic.com, 156557, RESELLER
+rubiconproject.com, 18694, RESELLER, 0bfd66d529a55807
+openx.com, 540274407, RESELLER, 6a698e2ec38604c6

@@ -1,9 +1,9 @@
 {
     "manifest_version": 2,
-    "name": "LuponMedia site checker",
+    "name": "GPT site checker",
     "description": "Check your site for errors in ads delivery",
     "version": "0.1",
-    "author": "adnan.supic@luponmedia.com",
+    "author": "adnan.supic@pm.me",
     "background": {
         "page": "./backgroundPage/background.html",
         "persistent": false

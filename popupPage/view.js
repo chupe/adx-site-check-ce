@@ -10,7 +10,8 @@ let update = (activeTabHostname) => {
         let homeCheck = document.getElementById('homepageCheck'),
             articleCheck = document.getElementById('articleCheck'),
             adstxtCheck = document.getElementById('adstxtCheck'),
-            infoContainer = document.getElementById('infoContainer')
+            infoContainer = document.getElementById('infoContainer'),
+            showDetails = document.getElementById('showDetails')
 
         let changes = data[activeTabHostname]
 
@@ -32,6 +33,14 @@ let update = (activeTabHostname) => {
         let adstxtH4 = document.getElementById('adstxt')
         if (adstxtH4)
             utilities.removeNode(adstxtH4)
+
+        let detailsH4 = document.getElementById('detailsH')
+        if (detailsH4)
+            utilities.removeNode(detailsH4)
+
+        let detailsInfo = document.getElementById('details')
+        if (detailsInfo)
+            utilities.removeNode(detailsInfo)
 
         // In the beginning of the function call the information is cleared from the
         // popup.html and if the 'changes' parameter is empty than it's suposed to
@@ -150,6 +159,20 @@ let update = (activeTabHostname) => {
         } else if (changes.adstxtCheck) {
             adstxt.innerText = 'Ads.txt file contains all the required lines'
             infoContainer.appendChild(adstxt)
+        }
+
+        let detailsH = document.createElement('H4')
+        detailsH.id = 'detailsH'
+        detailsH.innerText = 'Storage details'
+        let details = document.createElement('pre')
+        details.id = 'details'
+        if (changes && changes.showDetails && changes.showDetails === true) {
+            details.innerText = JSON.stringify(data, null, 4)
+            infoContainer.appendChild(detailsH)
+            infoContainer.appendChild(details)
+        } else {
+            utilities.removeNode(detailsH)
+            utilities.removeNode(details)
         }
     })
 

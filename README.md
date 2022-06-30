@@ -1,6 +1,4 @@
-adx-site-check-ce
-
-This is a Chrome extension created to automate some of the checks for proper setup required for displaying of GPT tags.
+A Chrome extension created to automate some of the checks for proper setup required for displaying of Google Publisher Tags.
 
 It goes trough the GPT tags, divs and proprietary (Lupon Media) script on the site.
 
@@ -10,4 +8,10 @@ Information is stored using storage API and all errors regarding individual ad u
 
 Storage details can be displayed in the popup.
 
-One of my first project so totaly laughable by a proper dev. :)
+Chrome store link:
+https://chrome.google.com/webstore/detail/gpt-site-checker/affbgdlmdnaahijhndilbecckienmdjj
+
+![image](https://user-images.githubusercontent.com/25374855/176601133-281fd9fa-67dd-494f-b6ba-7fe97c11101b.png)
+
+Related work:
+https://github.com/chupe/check-gpt-tags

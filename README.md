@@ -9,11 +9,12 @@ Information is stored using storage API and all errors regarding individual ad u
 
 Storage details can be displayed in the popup.
 
+# where to find
 Chrome store link:
 https://chrome.google.com/webstore/detail/gpt-site-checker/affbgdlmdnaahijhndilbecckienmdjj
 
 ![image](https://user-images.githubusercontent.com/25374855/176601133-281fd9fa-67dd-494f-b6ba-7fe97c11101b.png)
 
-Related work:
+# related work
 https://github.com/chupe/check-gpt-tags
 https://github.com/chupe/gam-adunits-injection

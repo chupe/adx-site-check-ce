@@ -1,3 +1,4 @@
+#adx-site-check-ce
 A Chrome extension created to automate some of the checks for proper setup required for displaying of Google Publisher Tags.
 
 It goes trough the GPT tags, divs and proprietary (Lupon Media) script on the site.
